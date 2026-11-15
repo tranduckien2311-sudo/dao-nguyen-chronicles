@@ -134,6 +134,36 @@ export const WESTERN_CLASSES = [
     desc: "-30% HP, +55% Mana, +4 Tinh Thần, +2 Tri Thức. Sát thương Lửa/Băng/Sét hủy diệt & Teleport.",
     startSkill: { name: "Fire Bolt & Static Field (Hỏa Tiễn & Trường Tĩnh Điện)", category: "Nguyên Tố Ma Pháp", grade: "Uncommon (Cấp 1)", tier: 1, level: 1, mastery: 20, daoIntent: "Chưa thức tỉnh", effect: "Phóng phép nguyên tố tầm xa và rút % máu địch bằng điện trường." },
   },
+  {
+    id: "d2_warlock",
+    name: "Warlock (Thuật Sĩ Khế Ước)",
+    stat: "linhhon",
+    hpMult: 0.85,
+    mpMult: 1.4,
+    startBonus: { linhhon: 3, tamtin: 3 },
+    desc: "-15% HP, +40% Mana, +3 Linh Hồn, +3 Tinh Thần. Lập khế ước Ác Ma/Cổ Thần & nguyền rủa.",
+    startSkill: { name: "Eldritch Pact & Soul Drain (Khế Ước Hắc Ám & Hút Hồn)", category: "Khế Ước / Hắc Ma Pháp", grade: "Uncommon (Cấp 1)", tier: 1, level: 1, mastery: 20, daoIntent: "Chưa thức tỉnh", effect: "Tung tia năng lượng hắc ám hút sinh lực/linh hồn bù vào bản thân." },
+  },
+  {
+    id: "d2_alchemist",
+    name: "Alchemist (Giả Kim Sư)",
+    stat: "linhhon",
+    hpMult: 1.05,
+    mpMult: 1.15,
+    startBonus: { ngotinh: 3, linhhon: 2, cancot: 1 },
+    desc: "+5% HP, +15% Mana, +3 Tri Thức, +2 Linh Hồn, +1 Thể Lực. Chế Ma Dược, bom giả kim & Cổ Vật.",
+    startSkill: { name: "Transmutation & Elixir Brew (Biến Đổi Giả Kim & Ma Dược)", category: "Giả Kim Thuật", grade: "Uncommon (Cấp 1)", tier: 1, level: 1, mastery: 20, daoIntent: "Chưa thức tỉnh", effect: "Điều chế Ma Dược hồi phục/buff chỉ số và chế tạo bom axit/lửa." },
+  },
+  {
+    id: "d2_scholar",
+    name: "Scholar (Học Giả Chiêm Tinh)",
+    stat: "ngotinh",
+    hpMult: 0.82,
+    mpMult: 1.3,
+    startBonus: { ngotinh: 4, tamtin: 2 },
+    desc: "-18% HP, +30% Mana, +4 Tri Thức, +2 Tinh Thần. Giải mã Ma Điển cổ đại, nhìn thấu âm mưu & bói toán.",
+    startSkill: { name: "Astral Divination & Rune Decipher (Chiêm Tinh & Giải Ấn)", category: "Chiêm Tinh / Chân Lý", grade: "Uncommon (Cấp 1)", tier: 1, level: 1, mastery: 20, daoIntent: "Chưa thức tỉnh", effect: "Đọc trước nguy hiểm, tăng tỉ lệ giải mã Ma Điển và bóc trần bẫy." },
+  },
 ];
 
 export const ORIGINS = [
