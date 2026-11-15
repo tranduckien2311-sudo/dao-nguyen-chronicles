@@ -1014,10 +1014,61 @@ export function syncRealmVitals(state, healToFull = false) {
   return changed;
 }
 
-export function getSkillStageDetails(sk) {
+export function getSkillPrimaryStat(sk) {
+  const text = `${sk?.category || ""} ${sk?.name || ""} ${sk?.effect || ""}`.toLowerCase();
+  if (/luyện thể|thể chất|nhục thân|huyết|kỵ sĩ|cuồng chiến|cận chiến|thương|đao|quyền/.test(text)) {
+    return { key: "cancot", label: "Căn Cốt" };
+  }
+  if (/hồn|quỷ|tử linh|ngự thú|pháp bảo|triệu hồi|khế ước/.test(text)) {
+    return { key: "linhhon", label: "Linh Hồn" };
+  }
+  if (/đạo|ngộ|trận|đan|giả kim|học giả|chiêm tinh|nho/.test(text)) {
+    return { key: "ngotinh", label: "Ngộ Tính" };
+  }
+  if (/thân pháp|thích khách|tốc|ẩn|khí vận/.test(text)) {
+    return { key: "khivan", label: "Khí Vận" };
+  }
+  if (/minh tưởng|ma pháp|ma điển|tâm|tinh thần|pháp thuật|ấn chú|thuật sĩ/.test(text)) {
+    return { key: "tamtin", label: "Tâm Trí" };
+  }
+  return { key: "cancot", label: "Căn Cốt" };
+}
+
+export function getSkillGradePointsPerLevel(sk, worldTier = 1) {
+  const grade = String(sk?.grade || "");
+  const t = Math.max(1, Number(sk?.tier) || 1);
+  const wTier = Math.max(1, Number(worldTier) || 1);
+  if (/không phẩm|phàm|sơ cấp|common/i.test(grade)) {
+    const pts = 1 * wTier;
+    return { basePts: 1, pts, canEvolveTier: false };
+  }
+  let basePts = 3;
+  if (/hoàng|uncommon/i.test(grade)) basePts = 3;
+  else if (/huyền|rare/i.test(grade)) basePts = 5;
+  else if (/địa|epic/i.test(grade)) basePts = 7;
+  else if (/thiên|tiên|thần|đạo|legendary|mythic/i.test(grade)) basePts = 9;
+  else basePts = t === 1 ? 3 : t === 2 ? 5 : t === 3 ? 7 : 9;
+
+  // Tầng công pháp sau cộng thêm tầng vào điểm gốc; lên tầng thế giới mới thì nhân tầng thế giới
+  const skillTierPts = basePts + (t > 1 ? t : 0);
+  return { basePts, pts: skillTierPts * wTier, canEvolveTier: true };
+}
+
+export function isSkillAtMaxCap(sk) {
+  if (!sk) return true;
+  const lv = Math.max(1, Number(sk.level) || 1);
+  const t = Math.max(1, Number(sk.tier) || 1);
+  const { canEvolveTier } = getSkillGradePointsPerLevel(sk, 1);
+  if (!canEvolveTier) return lv >= 10;
+  return t >= 5 && lv >= 10;
+}
+
+export function getSkillStageDetails(sk, worldTier = 1) {
   const lv = Math.max(1, Number(sk?.level) || 1);
   const t = Math.max(1, Number(sk?.tier) || 1);
-  const isCult = /công pháp|tu luyện|luyện thể|thể chất|đại đạo/i.test(`${sk?.category} ${sk?.name}`);
+  const isCult = /công pháp|tu luyện|luyện thể|thể chất|đại đạo|minh tưởng/i.test(`${sk?.category} ${sk?.name}`);
+  const { pts, canEvolveTier } = getSkillGradePointsPerLevel(sk, worldTier);
+  const primaryStat = getSkillPrimaryStat(sk);
   const speedPct = isCult ? lv * 4 * t : lv * 1 * t;
   const powerPct = lv * 12 * t;
   const specials = Array.isArray(sk?.specialEffects) ? [...sk.specialEffects] : [];
@@ -1043,37 +1094,65 @@ export function getSkillStageDetails(sk) {
     );
   }
   if (lv >= 10 && !specials.some((x) => x.startsWith("[Tầng 10"))) {
-    specials.push("[Tầng 10 • Đỉnh Phong] Đã đạt cực hạn tầng, sẵn sàng Diễn Hóa lên Bậc cao hơn!");
+    specials.push(
+      canEvolveTier
+        ? "[Tầng 10 • Đỉnh Phong] Đã đạt cực hạn tầng, sẵn sàng Diễn Hóa lên Bậc cao hơn!"
+        : "[Tầng 10 • Đỉnh Phong] Công pháp Không Phẩm đã đạt cực hạn, không có tầng sau."
+    );
   }
+  const splitNote = pts === 1 ? `+1 điểm tự do/Lv` : `+${pts}đ/Lv (50–80% vào ${primaryStat.label}, còn lại tự do)`;
   return {
     speedPct,
     powerPct,
+    ptsPerLv: pts,
+    canEvolveTier,
+    primaryStat,
     specials,
-    summaryText: `Uy lực +${powerPct}%${speedPct > 0 ? ` • Tốc độ tu luyện +${speedPct}%` : ""}`,
+    summaryText: `Uy lực +${powerPct}%${speedPct > 0 ? ` • Tốc độ tu luyện +${speedPct}%` : ""} • ${splitNote}`,
   };
 }
 
 export function applySkillLevelUpRewards(player, sk) {
   const lv = Math.max(1, Number(sk?.level) || 1);
   const t = Math.max(1, Number(sk?.tier) || 1);
-  const isCult = /công pháp|tu luyện|luyện thể|thể chất|đại đạo/i.test(`${sk?.category} ${sk?.name}`);
-  const pts = t * 2;
+  const worldTier = Math.max(1, Number(player?.tier) || 1);
+  const isCult = /công pháp|tu luyện|luyện thể|thể chất|đại đạo|minh tưởng/i.test(`${sk?.category} ${sk?.name}`);
+  const { pts } = getSkillGradePointsPerLevel(sk, worldTier);
+  const primaryStat = getSkillPrimaryStat(sk);
+
+  let mandatoryPts = 0;
+  let freePts = pts;
+  if (pts >= 2) {
+    const ratio = 0.5 + Math.random() * 0.3;
+    mandatoryPts = Math.min(pts, Math.max(1, Math.round(pts * ratio)));
+    freePts = pts - mandatoryPts;
+  }
+
   const hpGain = Math.round((isCult ? 65 : 30) * t * lv);
   const mpGain = Math.round((isCult ? 45 : 35) * t * lv);
 
-  player.potentialPoints = (player.potentialPoints || 0) + pts;
+  player.potentialPoints = (player.potentialPoints || 0) + freePts;
   player.maxHp = (player.maxHp || 100) + hpGain;
   player.hp = Math.min(player.maxHp, (player.hp || 0) + hpGain);
   player.maxMp = (player.maxMp || 80) + mpGain;
   player.mp = Math.min(player.maxMp, (player.mp || 0) + mpGain);
 
-  const statKey = isCult ? "cancot" : "linhhon";
-  if (player.stats && statKey in player.stats) {
-    player.stats[statKey] += t;
+  if (player.stats && primaryStat.key in player.stats && mandatoryPts > 0) {
+    player.stats[primaryStat.key] += mandatoryPts;
   }
 
-  const details = getSkillStageDetails(sk);
+  const details = getSkillStageDetails(sk, worldTier);
   sk.specialEffects = details.specials;
 
-  return { pts, hpGain, mpGain, statKey, statGain: t, details };
+  return {
+    pts,
+    freePts,
+    mandatoryPts,
+    statKey: primaryStat.key,
+    statLabel: primaryStat.label,
+    statGain: mandatoryPts,
+    hpGain,
+    mpGain,
+    details,
+  };
 }

@@ -44,6 +44,7 @@ import {
   syncRealmVitals,
   getSkillStageDetails,
   applySkillLevelUpRewards,
+  isSkillAtMaxCap,
   rollOriginByDice,
   rollGoldenFingerByDice,
   choosePlayerClass,
@@ -304,7 +305,7 @@ function renderTabs() {
     </div>
     ${p.skills
       .map((sk, idx) => {
-        const stage = getSkillStageDetails(sk);
+        const stage = getSkillStageDetails(sk, p.tier);
         return `
       <div class="list-card">
         <div class="list-card-head">
@@ -312,7 +313,9 @@ function renderTabs() {
           <div style="display:flex;gap:4px;">
             <button class="mini-btn btn-insert-skill" data-name="${sk.name}">Dùng</button>
             ${
-              sk.mastery >= 100
+              isSkillAtMaxCap(sk)
+                ? `<span style="color:var(--muted);font-size:10px;align-self:center;">🔒 Cực hạn</span>`
+                : sk.mastery >= 100
                 ? `<button class="mini-btn btn-evolve-skill" data-idx="${idx}">⚡ Diễn Hóa</button>`
                 : ""
             }
@@ -1047,6 +1050,10 @@ async function handleEvolvePhysique() {
 async function handleEvolveSkill(idx) {
   const sk = state.player.skills[idx];
   if (!sk || sk.mastery < 100 || isBusy) return;
+  if (isSkillAtMaxCap(sk)) {
+    alert("Công pháp này đã đạt cực hạn (Không Phẩm không có tầng sau)!");
+    return;
+  }
 
   if (sk.level < 10) {
     sk.level += 1;
@@ -1062,7 +1069,7 @@ async function handleEvolveSkill(idx) {
   state.logs.push({
     type: "system",
     title: `Tăng Tầng Công Pháp: ${sk.name} (Bậc ${sk.tier} Lv.${sk.level})`,
-    text: `Nhận +${reward.pts} Điểm Tiềm Năng, +${reward.hpGain} HP tối đa, +${reward.mpGain} MP tối đa, +${reward.statGain} ${reward.statKey}. ${reward.details.summaryText}.${reward.details.specials.length ? ` Hiệu ứng đặc biệt: ${reward.details.specials[reward.details.specials.length - 1]}` : ""}`,
+    text: `Nhận +${reward.freePts} Điểm Tự Do${reward.mandatoryPts > 0 ? `, +${reward.mandatoryPts} điểm bắt buộc vào ${reward.statLabel}` : ""}, +${reward.hpGain} HP tối đa, +${reward.mpGain} MP tối đa. ${reward.details.summaryText}.${reward.details.specials.length ? ` Hiệu ứng đặc biệt: ${reward.details.specials[reward.details.specials.length - 1]}` : ""}`,
   });
   saveGameState(state);
   await handlePlayerAction(
