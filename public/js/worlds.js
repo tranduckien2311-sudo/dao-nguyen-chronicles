@@ -55,12 +55,12 @@ export const PHYSIQUES = [
 ];
 
 export const BUILD_PATHS = [
-  { id: "thetu", name: "Thân Thể (Thể Tu)", stat: "cancot", desc: "Lấy Căn Cốt làm gốc, nhục thân thành thánh, HP dồi dào, thiên phú tăng theo căn cốt." },
-  { id: "phaptu", name: "Tâm Trí (Pháp Tu)", stat: "tamtin", desc: "Tâm trí & tinh thần lực sắc bén, dễ phát hiện âm mưu, bảo vật và tung pháp thuật uy lực (mở khóa Thần Thức khi đạt Hóa Thần / Ma Pháp Chi Tâm)." },
-  { id: "hontu", name: "Linh Hồn (Hồn Tu)", stat: "linhhon", desc: "Kháng công kích linh hồn, tăng sát thương kỹ năng, tăng tỉ lệ đột phá vượt ải." },
-  { id: "phapbao", name: "Pháp Bảo (Khí Tu)", stat: "linhhon", desc: "Linh hồn cao giúp tăng độ phù hợp, sát thương và thức tỉnh tiềm ẩn của Pháp bảo." },
-  { id: "nguthu", name: "Ngự Thú Sư", stat: "linhhon", desc: "Khế ước linh thú, Linh hồn cao giúp tăng sức mạnh và kích hoạt huyết mạch ẩn của Ngự thú." },
-  { id: "daotu", name: "Đạo Tu (Ngộ Đạo)", stat: "ngotinh", desc: "Ngộ tính cực cao, dễ vượt câu hỏi Ngộ Đạo, lĩnh ngộ công pháp và tăng tu vi thần tốc." },
+  { id: "thetu", name: "Thân Thể (Thể Tu)", westName: "Kỵ Sĩ / Chiến Binh (Vanguard)", stat: "cancot", hpMult: 1.45, mpMult: 0.75, startBonus: { cancot: 3 }, desc: "HP khởi đầu cao nhất (+45% HP), giáp dày, cận chiến áp đảo.", westDesc: "Kỵ sĩ tiền phong lấy Thể Lực & Giáp làm gốc (+45% HP khởi đầu, -25% Mana)." },
+  { id: "phaptu", name: "Tâm Trí (Pháp Tu)", westName: "Pháp Sư Huyền Bí (Arcanist)", stat: "tamtin", hpMult: 0.72, mpMult: 1.45, startBonus: { tamtin: 3 }, desc: "HP thấp (-28% HP), Mana cực dồi dào (+45% MP), bùng nổ phép thuật.", westDesc: "Pháp sư chuyên chú Tinh Thần Hải & Ma Pháp (-28% HP, +45% Mana khởi đầu)." },
+  { id: "hontu", name: "Linh Hồn (Hồn Tu)", westName: "Thuật Sĩ Linh Hồn (Warlock / Medium)", stat: "linhhon", hpMult: 0.88, mpMult: 1.3, startBonus: { linhhon: 3 }, desc: "Kháng linh hồn cao (-12% HP, +30% MP), chuyên nguyền rủa & linh hồn.", westDesc: "Thuật sĩ giao tiếp linh giới & nguyền rủa (-12% HP, +30% Mana, kháng linh hồn)." },
+  { id: "phapbao", name: "Pháp Bảo (Khí Tu)", westName: "Giả Kim & Thợ Rèn Cổ Vật (Artificer)", stat: "linhhon", hpMult: 1.05, mpMult: 1.1, startBonus: { linhhon: 2, cancot: 1 }, desc: "Cân bằng (+5% HP, +10% MP), phát huy tối đa Cổ Vật / Pháp Bảo.", westDesc: "Giả kim sư & thợ rèn Rune (+5% HP, +10% Mana), chuyên chế tạo Ma Dược & Cổ Vật." },
+  { id: "nguthu", name: "Ngự Thú Sư", westName: "Triệu Hồi Sư / Khế Ước (Summoner)", stat: "linhhon", hpMult: 0.95, mpMult: 1.15, startBonus: { linhhon: 2, nhanduyen: 10 }, desc: "Khế ước linh thú / ma thú (-5% HP, +15% MP), chiến đấu theo bầy.", westDesc: "Triệu hồi sư lập khế ước với Tinh Linh, Ác Ma hoặc Ma Thú (-5% HP, +15% Mana)." },
+  { id: "daotu", name: "Đạo Tu (Ngộ Đạo)", westName: "Học Giả Chân Lý (Mystic Scholar)", stat: "ngotinh", hpMult: 0.82, mpMult: 1.25, startBonus: { ngotinh: 3 }, desc: "Ngộ tính cực cao (-18% HP, +25% MP), giải mã chân lý & học nhanh.", westDesc: "Học giả chiêm tinh & chân lý cổ đại (-18% HP, +25% Mana, giải mã Ma Điển siêu nhanh)." },
 ];
 
 export const ORIGINS = [
@@ -91,21 +91,29 @@ export const GOLDEN_FINGERS = [
   {
     id: "system",
     name: "Hệ Thống Tối Thượng (Kèm Âm Mưu)",
+    westName: "Khế Ước Thần Thánh / Kính Chiêm Tinh (Kèm Âm Mưu)",
     desc: "Ban nhiệm vụ, thưởng tu vi và điểm tiềm năng siêu tốc. Tuy nhiên, không có bữa trưa nào miễn phí...",
+    westDesc: "Ban nhiệm vụ & phân tích xác suất ma pháp siêu tốc, nhưng đang âm thầm thu thập dữ liệu linh hồn.",
     startItem: { name: "Giao Diện Hệ Thống Lv.1", type: "Đặc Biệt", desc: "Hiển thị phân tích xác suất sơ cấp, nhưng âm thầm ghi lại dữ liệu linh hồn." },
+    westStartItem: { name: "Mảnh Kính Chiêm Tinh Lv.1", type: "Cổ Vật Đặc Biệt", desc: "Phân tích ma lực & tỉ lệ thành công khi pha chế Ma Dược / thi triển Ấn Chú." },
     hiddenCost: "Hệ thống thực chất là thuật toán nuôi dưỡng linh hồn của một thực thể Tầng 3/4 đang chờ ngày thu hoạch.",
   },
   {
     id: "artifact",
     name: "Chí Bảo Hỗn Độn Tàn Khuyết",
+    westName: "Cổ Vật Thất Lạc Của Solomon / Tartarus",
     desc: "Một món pháp bảo/cổ vật đỉnh cao bị phong ấn đi theo bạn từ đầu, có thể thức tỉnh theo Linh Hồn.",
+    westDesc: "Một món Cổ Vật bị phong ấn từ kỷ nguyên Thần Thoại, thức tỉnh dần theo Linh Hồn.",
     startItem: { name: "Mảnh Vỡ Hỗn Độn Đỉnh", type: "Pháp Bảo (Ẩn)", desc: "Tăng nhẹ tốc độ hồi phục, ẩn chứa khí tức cổ xưa." },
+    westStartItem: { name: "Mảnh Vỡ Chìa Khóa Solomon", type: "Cổ Vật (Ẩn)", slot: "accessory", statBonuses: { linhhon: 2 }, effects: "+10% tốc độ hồi Mana & kháng nguyền rủa", desc: "Cổ vật phong ấn 72 trụ cột ma pháp cổ đại." },
     hiddenCost: "Chí bảo mang theo Ấn Ký Định Vị của chủ nhân cũ (một Cổ Thần hoặc Tân Thần đang bị truy sát).",
   },
   {
     id: "technique",
     name: "Công Pháp Nghịch Thiên Thất Truyền",
+    westName: "Ma Điển Cấm Kỵ Thất Truyền (Grimoire Đen)",
     desc: "Sở hữu ngay một bộ công pháp/thần thông phẩm cấp cực cao từ đầu, tốc độ tu luyện vượt trội.",
+    westDesc: "Sở hữu ngay một cuốn Ma Điển Cấm Kỵ từ đầu, tốc độ tích lũy Ma Lực & giải mã phép vượt trội.",
     startSkill: {
       name: "Vô Tự Thiên Thư (Quyển 1)",
       category: "Công Pháp Tu Luyện",
@@ -116,12 +124,24 @@ export const GOLDEN_FINGERS = [
       daoIntent: "Sơ Khởi Chi Đạo (Áp chế công pháp phàm tục)",
       effect: "+35% Tốc độ tu luyện, tăng nhẹ toàn bộ thuộc tính khi đột phá.",
     },
+    westStartSkill: {
+      name: "Necronomicon: Chương Khởi Nguyên",
+      category: "Ma Điển Cấm Kỵ",
+      grade: "Epic (Phong Ấn)",
+      tier: 1,
+      level: 3,
+      mastery: 35,
+      daoIntent: "Hắc Ám Chân Lý (Áp chế ma pháp thường)",
+      effect: "+35% Tốc độ minh tưởng & tích lũy Ma Lực, tăng mạnh Mana khi tấn thăng.",
+    },
     hiddenCost: "Mỗi tầng công pháp luyện thành sẽ đồng bộ hóa kinh mạch của ngươi với một vị Tà Thần/Tiên Đế cổ đại.",
   },
   {
     id: "none",
     name: "Phàm Nhân Tự Lập (Không Bàn Tay Vàng)",
+    westName: "Kẻ Phàm Trần Tự Lập (Không Di Sản)",
     desc: "Không nhận đặc cách, khởi đầu thuần khiết. Bù lại không gánh lời nguyền ký sinh, Khí vận +3.",
+    westDesc: "Khởi đầu thuần khiết không gánh lời nguyền cổ thần, bù lại May Mắn +3.",
     bonus: { khivan: 3, cancot: 1, congduc: 5 },
     hiddenCost: "Không có ký sinh từ bàn tay vàng, nhưng sự quật khởi tự nhiên của ngươi vẫn sẽ va chạm với các thế lực lớn.",
   },
@@ -223,24 +243,24 @@ export const WORLD_PRESETS = {
     },
     defaultSkills: [
       {
-        name: "Minh Tưởng Thuật Cổ Điển",
-        category: "Công Pháp Tu Luyện",
-        grade: "Phàm Giai",
+        name: "Ma Điển Minh Tưởng: Tinh Hải Khai Mở",
+        category: "Ma Điển / Minh Tưởng",
+        grade: "Common (Cấp 1)",
         tier: 1,
         level: 1,
         mastery: 15,
-        daoIntent: "Chưa ngộ",
-        effect: "Tăng tốc hồi phục Linh năng và ổn định tinh thần (+10% tu luyện).",
+        daoIntent: "Chưa thức tỉnh",
+        effect: "Điều hòa Ma Lực trong Tinh Thần Hải, hồi Mana và tăng +12% tốc độ tích lũy Ma Lực.",
       },
       {
-        name: "Linh Thị & Ánh Chớp Không Gian",
-        category: "Thần Thông / Pháp Thuật",
-        grade: "Hoàng Giai",
+        name: "Ấn Chú Hộ Thuẫn & Bước Nhảy Không Gian",
+        category: "Ấn Chú / Ma Pháp",
+        grade: "Uncommon (Cấp 1)",
         tier: 1,
         level: 1,
         mastery: 10,
-        daoIntent: "Chưa ngộ",
-        effect: "Quan sát luồng ma lực và dịch chuyển ngắn vài bước.",
+        daoIntent: "Chưa thức tỉnh",
+        effect: "Khắc ma trận phòng hộ ngắn và dịch chuyển tức thời vài bước.",
       },
     ],
     conspiracySeeds: [
@@ -302,3 +322,37 @@ export const WORLD_PRESETS = {
     ],
   },
 };
+
+export const WESTERN_BLOODLINES = [
+  { id: "wb_human", name: "Phàm Nhân Chi Huyết (Chưa Thức Tỉnh)", group: "Cơ Bản", speedBonus: 0, bonus: {}, desc: "Huyết mạch nhân loại thuần túy, có thể thức tỉnh qua Ma Dược Thần Tính hoặc Nghi Thức Cổ Đại." },
+  { id: "wb_dragon", name: "Long Huyết Hậu Duệ (Dragonkin)", group: "Thể Xác", speedBonus: 25, bonus: { cancot: 4, armorBonus: 12 }, desc: "+4 Thể Lực, +12 Giáp vảy rồng, +25% tốc độ tích lũy Ma Lực." },
+  { id: "wb_elf", name: "Huyết Mạch Tinh Linh Cổ (High Elf)", group: "Tâm Linh", speedBonus: 35, bonus: { tamtin: 4, ngotinh: 3 }, desc: "+4 Tinh Thần, +3 Tri Thức, +35% tốc độ minh tưởng, cảm ứng ma lực cực nhạy." },
+  { id: "wb_vampire", name: "Huyết Tộc Cổ Đại (Crimson Vampire)", group: "Linh Hồn", speedBonus: 25, bonus: { linhhon: 4, cancot: 2 }, desc: "+4 Linh Hồn, +2 Thể Lực, hồi phục sinh lực bằng huyết năng trong đêm." },
+  { id: "wb_titan", name: "Thừa Kế Titan (Titanborn)", group: "Thể Xác", speedBonus: 20, bonus: { cancot: 5, armorBonus: 15 }, desc: "+5 Thể Lực, +15 Giáp cổ thần, sức mạnh vật lý áp đảo." },
+  { id: "wb_oracle", name: "Mắt Tiên Tri Apollo (Oracle Blood)", group: "Đạo", speedBonus: 40, bonus: { ngotinh: 4, tamtin: 3 }, desc: "+4 Tri Thức, +3 Tinh Thần, dễ giải mã Ma Điển và né tránh âm mưu." },
+];
+
+export const WESTERN_GRIMOIRES = [
+  { name: "Ma Điển Minh Tưởng: Tinh Hải", tier: 1, grade: "Common", effect: "Tăng 15% tốc độ hồi Mana và ổn định tinh thần trước quỷ dị." },
+  { name: "Huyết Tộc Khế Ước Thư", tier: 1, grade: "Rare", effect: "Rèn thể xác bằng Huyết Năng, hồi 8% HP khi kết liễu địch." },
+  { name: "Chìa Khóa Nhỏ Của Solomon (Lemegeton)", tier: 1, grade: "Epic", effect: "Triệu hồi & khống chế 72 Ác Ma trụ cột bằng Ấn Chú." },
+  { name: "Emerald Tablet (Bản Ngọc Lục Bảo Giả Kim)", tier: 1, grade: "Epic", effect: "Chế tạo Ma Dược Tấn Thăng không tác dụng phụ (+20% tỉ lệ thành công)." },
+  { name: "Codex Astralis (Chiêm Tinh Bảo Điển)", tier: 2, grade: "Legendary", effect: "Đọc trước quỹ đạo vận mệnh và phản đòn phép thuật từ xa." },
+  { name: "Necronomicon: Bản Thảo Cấm Kỵ", tier: 2, grade: "Legendary", effect: "Chạm tới tri thức Ngoại Thần 4D, tăng cực mạnh uy lực Hắc Ma Pháp." },
+];
+
+export const WESTERN_SPELLS = [
+  { name: "Hỏa Cầu Thuật (Fireball)", tier: 1, grade: "Common", effect: "Phóng cầu lửa nổ lan, sát thương Phép cơ bản." },
+  { name: "Khiên Ánh Sáng Aegis", tier: 1, grade: "Rare", effect: "Tạo lá chắn thánh quang chặn sát thương vật lý & nguyền rủa." },
+  { name: "Lôi Đình Zeus (Lightning Bolt)", tier: 1, grade: "Epic", effect: "Giáng tia sét tức thời, xuyên giáp kim loại và làm tê liệt." },
+  { name: "Lời Nguyền Héo Úa (Wither Curse)", tier: 1, grade: "Rare", effect: "Giảm Max HP và bào mòn sinh lực mục tiêu theo lượt." },
+  { name: "Cổng Triệu Hồi Tartarus", tier: 2, grade: "Legendary", effect: "Triệu hồi quái vật Vực Thẳm tham chiến." },
+];
+
+export const WESTERN_ITEMS = [
+  { name: "Ma Dược Minh Tưởng (Mana Elixir)", tier: 1, type: "Ma Dược", desc: "Hồi 40% Mana và xoa dịu tinh thần khỏi ô nhiễm." },
+  { name: "Bình Máu Giả Kim Đỏ", tier: 1, type: "Ma Dược", desc: "Hồi nhanh Sinh Lực và khép vết thương." },
+  { name: "Trượng Sồi Khắc Rune", tier: 1, slot: "weapon", armorBonus: 0, statBonuses: { tamtin: 2 }, effects: "+15% sát thương Ma Pháp", desc: "Pháp trượng cơ bản của Hội Pháp Sư." },
+  { name: "Giáp Bạc Kỵ Sĩ Thánh Điện", tier: 1, slot: "armor", armorBonus: 18, resistBonus: { physical: 12, soul: 8 }, effects: "Kháng ma thuật hắc ám", desc: "Áo giáp rèn bằng bạc tinh luyện." },
+  { name: "Nhẫn Chiêm Tinh Bạc", tier: 1, slot: "accessory", armorBonus: 4, statBonuses: { ngotinh: 2, khivan: 2 }, effects: "+10% nhạy bén âm mưu", desc: "Vật phẩm hộ mệnh của Chiêm Tinh Sư." },
+];

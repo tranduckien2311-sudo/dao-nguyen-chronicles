@@ -6,6 +6,10 @@ import {
   COSMIC_TIERS,
   SKILL_TIERS,
   PHYSIQUES,
+  WESTERN_BLOODLINES,
+  WESTERN_GRIMOIRES,
+  WESTERN_SPELLS,
+  WESTERN_ITEMS,
 } from "./worlds.js";
 import {
   CATALOG_PHYSIQUES,
@@ -127,6 +131,17 @@ function renderTopHud() {
   $("tuvi-text").textContent = `${p.cultivation}%`;
   $("tuvi-bar").style.width = `${Math.max(0, Math.min(100, p.cultivation))}%`;
 
+  const isWest = state.worldId === "maphap";
+  const mpLbl = $("mp-text")?.previousElementSibling;
+  if (mpLbl) mpLbl.textContent = isWest ? "Mana" : "Linh Lực";
+  const tuviLbl = $("tuvi-text")?.previousElementSibling;
+  if (tuviLbl) tuviLbl.textContent = isWest ? "Ma Lực / XP" : "Tu Vi";
+  $("btn-breakthrough").textContent = isWest ? "⚡ Tấn Thăng" : "⚡ Đột Phá";
+  const tabSkillsBtn = document.querySelector('.tab-btn[data-tab="skills"]');
+  if (tabSkillsBtn) tabSkillsBtn.textContent = isWest ? "Ma Điển & Phép" : "Kỹ Năng";
+  const tabBagBtn = document.querySelector('.tab-btn[data-tab="bag"]');
+  if (tabBagBtn) tabBagBtn.textContent = isWest ? "Hành Trang" : "Túi & Nghề";
+
   $("btn-breakthrough").classList.toggle("hidden", p.cultivation < 100 || state.mode === "combat");
 }
 
@@ -134,20 +149,34 @@ function renderTabs() {
   const p = state.player;
   const derived = computeDerivedStats(p, getContinuousLevel(state));
   const world = WORLD_PRESETS[state.worldId];
+  const isWest = state.worldId === "maphap";
 
   // STATS TAB
-  const statLabels = [
-    ["cancot", "Căn Cốt"],
-    ["tamtin", "Tâm Trí"],
-    ["linhhon", "Linh Hồn"],
-    ["ngotinh", "Ngộ Tính"],
-    ["thienphu", "Thiên Phú"],
-    ["khivan", "Khí Vận"],
-    ["congduc", "Công Đức"],
-    ["nghiepluc", "Nghiệp Lực"],
-    ["nhanduyen", "Nhân Duyên"],
-    ["danhvong", "Danh Vọng"],
-  ];
+  const statLabels = isWest
+    ? [
+        ["cancot", "Thể Lực"],
+        ["tamtin", "Tinh Thần"],
+        ["linhhon", "Linh Hồn"],
+        ["ngotinh", "Tri Thức"],
+        ["thienphu", "Thiên Phú"],
+        ["khivan", "May Mắn"],
+        ["congduc", "Ân Điển"],
+        ["nghiepluc", "Tội Nghiệp"],
+        ["nhanduyen", "Hảo Cảm"],
+        ["danhvong", "Danh Tiếng"],
+      ]
+    : [
+        ["cancot", "Căn Cốt"],
+        ["tamtin", "Tâm Trí"],
+        ["linhhon", "Linh Hồn"],
+        ["ngotinh", "Ngộ Tính"],
+        ["thienphu", "Thiên Phú"],
+        ["khivan", "Khí Vận"],
+        ["congduc", "Công Đức"],
+        ["nghiepluc", "Nghiệp Lực"],
+        ["nhanduyen", "Nhân Duyên"],
+        ["danhvong", "Danh Vọng"],
+      ];
   const allocatable = new Set(["cancot", "tamtin", "linhhon", "ngotinh", "thienphu", "khivan"]);
 
   const phyInfo = getPhysiqueInfo(p);
@@ -254,8 +283,8 @@ function renderTabs() {
   // SKILLS TAB
   $("tab-skills").innerHTML = `
     <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
-      <button id="btn-open-create-tech" class="mini-btn">📜 Sáng Tạo Công Pháp</button>
-      <button id="btn-open-catalog" class="mini-btn">📚 Thư Viện (100 Thể Chất • 600 Pháp)</button>
+      <button id="btn-open-create-tech" class="mini-btn">${isWest ? "📜 Biên Soạn Ma Pháp / Nghi Thức" : "📜 Sáng Tạo Công Pháp"}</button>
+      <button id="btn-open-catalog" class="mini-btn">${isWest ? "📚 Kho Ma Điển & Huyết Mạch" : "📚 Thư Viện (100 Thể Chất • 600 Pháp)"}</button>
     </div>
     ${p.skills
       .map((sk, idx) => {
@@ -1060,8 +1089,26 @@ function openNewGameModal() {
   `;
 
   const syncProfs = () => {
-    const w = WORLD_PRESETS[$("ng-world").value];
+    const wid = $("ng-world").value;
+    const isW = wid === "maphap";
+    const w = WORLD_PRESETS[wid];
     $("ng-prof").innerHTML = w.professions.map((p) => `<option value="${p}">${p}</option>`).join("");
+    $("ng-build").innerHTML = BUILD_PATHS.map((b) => {
+      const hpTag = b.hpMult >= 1 ? `+${Math.round((b.hpMult - 1) * 100)}% HP` : `${Math.round((b.hpMult - 1) * 100)}% HP`;
+      const mpTag = b.mpMult >= 1 ? `+${Math.round((b.mpMult - 1) * 100)}% MP` : `${Math.round((b.mpMult - 1) * 100)}% MP`;
+      return `<option value="${b.id}">${isW ? b.westName : b.name} (${hpTag}, ${mpTag})</option>`;
+    }).join("");
+    $("ng-golden").innerHTML = GOLDEN_FINGERS.map((g) => `<option value="${g.id}">${isW && g.westName ? g.westName : g.name}</option>`).join("");
+    $("ng-physique").innerHTML = isW
+      ? WESTERN_BLOODLINES.map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group}] — ${ph.desc}</option>`).join("")
+      : PHYSIQUES.map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group}] — ${ph.desc}</option>`).join("") +
+        CATALOG_PHYSIQUES.filter((ph) => ph.tier === 1).map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group} • ${ph.grade}]</option>`).join("");
+    const lblBuild = $("ng-build").previousElementSibling;
+    if (lblBuild) lblBuild.textContent = isW ? "Class / Chức Nghiệp (Quyết định HP/Mana khởi đầu)" : "Hướng Build Chủ Đạo (Quyết định HP/MP khởi đầu)";
+    const lblGolden = $("ng-golden").previousElementSibling;
+    if (lblGolden) lblGolden.textContent = isW ? "Di Sản / Dị Năng Khởi Đầu (Có cái giá ẩn!)" : "Bàn Tay Vàng (Lưu ý: Đều có cái giá & âm mưu ẩn!)";
+    const lblPhy = $("ng-physique").previousElementSibling;
+    if (lblPhy) lblPhy.textContent = isW ? "Huyết Mạch (Bloodline)" : "Thể Chất (Chọn từ 100 Thể Chất hoặc Phàm Thể)";
   };
   $("ng-world").addEventListener("change", syncProfs);
   syncProfs();
@@ -1307,15 +1354,24 @@ function openCatalogModal() {
   const modal = $("modal-catalog");
   modal.classList.remove("hidden");
 
+  const isWest = state?.worldId === "maphap";
   const renderList = (cat, q = "") => {
     const query = q.trim().toLowerCase();
-    const map = {
-      physiques: CATALOG_PHYSIQUES,
-      congphap: CATALOG_CONG_PHAP,
-      chienphap: CATALOG_CHIEN_PHAP,
-      thuat: CATALOG_THUAT,
-      creatures: MYTHIC_CREATURES,
-    };
+    const map = isWest
+      ? {
+          bloodlines: WESTERN_BLOODLINES,
+          grimoires: WESTERN_GRIMOIRES,
+          spells: WESTERN_SPELLS,
+          items: WESTERN_ITEMS,
+          creatures: MYTHIC_CREATURES.filter((c) => /hy lạp|bắc âu|ai cập|phương tây|lovecraft/i.test(c.culture || "")),
+        }
+      : {
+          physiques: CATALOG_PHYSIQUES,
+          congphap: CATALOG_CONG_PHAP,
+          chienphap: CATALOG_CHIEN_PHAP,
+          thuat: CATALOG_THUAT,
+          creatures: MYTHIC_CREATURES,
+        };
     const items = (map[cat] || []).filter((x) =>
       !query || `${x.name} ${x.group || ""} ${x.culture || ""} ${x.grade || ""} ${x.desc || x.effect || ""}`.toLowerCase().includes(query)
     );
@@ -1333,11 +1389,19 @@ function openCatalogModal() {
   $("catalog-body").innerHTML = `
     <div style="display:flex;gap:5px;flex-wrap:wrap;">
       <select id="cat-type" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px;">
-        <option value="physiques">100 Thể Chất</option>
-        <option value="congphap">200 Công Pháp (Rèn Thể Chất)</option>
-        <option value="chienphap">200 Chiến Pháp</option>
-        <option value="thuat">200 Thuật</option>
-        <option value="creatures">200 Sinh Vật Huyền Bí Đông-Tây</option>
+        ${
+          isWest
+            ? `<option value="bloodlines">Huyết Mạch Phương Tây</option>
+               <option value="grimoires">Ma Điển (Grimoires)</option>
+               <option value="spells">Ma Pháp & Ấn Chú (Spells)</option>
+               <option value="items">Ma Dược & Cổ Vật (Items)</option>
+               <option value="creatures">Sinh Vật Thần Thoại Tây Phương</option>`
+            : `<option value="physiques">100 Thể Chất</option>
+               <option value="congphap">200 Công Pháp (Rèn Thể Chất)</option>
+               <option value="chienphap">200 Chiến Pháp</option>
+               <option value="thuat">200 Thuật</option>
+               <option value="creatures">200 Sinh Vật Huyền Bí Đông-Tây</option>`
+        }
       </select>
       <input id="cat-search" placeholder="Tìm theo tên, Tầng, hệ..." style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px;" />
     </div>

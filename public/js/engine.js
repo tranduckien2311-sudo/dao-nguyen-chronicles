@@ -1,4 +1,4 @@
-import { WORLD_PRESETS, ORIGINS, GOLDEN_FINGERS, COSMIC_TIERS, PHYSIQUES } from "./worlds.js";
+import { WORLD_PRESETS, ORIGINS, GOLDEN_FINGERS, BUILD_PATHS, COSMIC_TIERS, PHYSIQUES, WESTERN_BLOODLINES } from "./worlds.js";
 import { CATALOG_PHYSIQUES } from "./catalog.js";
 
 const STORAGE_KEY = "dao_nguyen_saves_v1";
@@ -160,6 +160,7 @@ export function computeDerivedStats(player, lv = null) {
 
   const physique =
     PHYSIQUES.find((ph) => ph.id === player.physiqueId) ||
+    WESTERN_BLOODLINES.find((ph) => ph.id === player.physiqueId) ||
     CATALOG_PHYSIQUES.find((ph) => ph.id === player.physiqueId) ||
     PHYSIQUES[0];
   const phyBonus = physique.bonus || {};
@@ -245,10 +246,13 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   const world = WORLD_PRESETS[worldId];
   const origin = ORIGINS.find((o) => o.id === originId) || ORIGINS[0];
   const golden = GOLDEN_FINGERS.find((g) => g.id === goldenId) || GOLDEN_FINGERS[0];
+  const build = BUILD_PATHS.find((b) => b.id === buildId) || BUILD_PATHS[0];
+  const isWest = worldId === "maphap";
   const physique =
     PHYSIQUES.find((ph) => ph.id === physiqueId) ||
+    WESTERN_BLOODLINES.find((ph) => ph.id === physiqueId) ||
     CATALOG_PHYSIQUES.find((ph) => ph.id === physiqueId) ||
-    PHYSIQUES[0];
+    (isWest ? WESTERN_BLOODLINES[0] : PHYSIQUES[0]);
 
   const baseStats = {
     cancot: 8,
@@ -278,32 +282,47 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
     if (k in baseStats) baseStats[k] += v;
   }
 
-  const maxHp = 100 + baseStats.cancot * 12;
-  const maxMp = 80 + baseStats.tamtin * 10 + baseStats.linhhon * 6;
+  const maxHp = Math.round((100 + baseStats.cancot * 12) * (build.hpMult || 1));
+  const maxMp = Math.round((80 + baseStats.tamtin * 10 + baseStats.linhhon * 6) * (build.mpMult || 1));
 
-  const starterArmor = {
-    name: worldId === "tutien" ? "Thanh Vân Bố Y" : worldId === "maphap" ? "Áo Choàng Học Đồ" : "Giáp Nano Sơ Cấp",
-    type: "Hộ Giáp",
-    slot: "armor",
-    equipped: true,
-    qty: 1,
-    armorBonus: 8,
-    statBonuses: { cancot: 1 },
-    resistBonus: { physical: 5, magic: 5 },
-    effects: "Hộ thân cơ bản (+1 Căn Cốt, +8 Giáp, +5% Kháng Vật Lý/Phép).",
-    desc: "Trang bị phòng ngự cơ bản (+1 Căn Cốt, +8 Giáp, +5% Kháng Vật Lý/Phép).",
-  };
-  const inventory = [
-    { name: "Hồi Khí Đan / Dung Dịch Hồi Phục", type: "Đan Dược", qty: 2, desc: "Hồi 40% HP & MP." },
-    starterArmor,
-  ];
-  if (golden.startItem) {
-    inventory.unshift({ ...golden.startItem, qty: 1 });
+  const starterArmor = isWest
+    ? {
+        name: "Áo Choàng Học Đồ Dệt Bạc",
+        type: "Giáp / Trang Phục",
+        slot: "armor",
+        equipped: true,
+        qty: 1,
+        armorBonus: 8,
+        statBonuses: { tamtin: 1 },
+        resistBonus: { physical: 5, magic: 8 },
+        effects: "Áo choàng Hội Pháp Sư (+1 Tinh Thần, +8 Giáp, +8% Kháng Phép).",
+        desc: "Trang phục bảo hộ cơ bản (+1 Tinh Thần, +8 Giáp, +8% Kháng Phép).",
+      }
+    : {
+        name: worldId === "tutien" ? "Thanh Vân Bố Y" : "Giáp Nano Sơ Cấp",
+        type: "Hộ Giáp",
+        slot: "armor",
+        equipped: true,
+        qty: 1,
+        armorBonus: 8,
+        statBonuses: { cancot: 1 },
+        resistBonus: { physical: 5, magic: 5 },
+        effects: "Hộ thân cơ bản (+1 Căn Cốt, +8 Giáp, +5% Kháng Vật Lý/Phép).",
+        desc: "Trang bị phòng ngự cơ bản (+1 Căn Cốt, +8 Giáp, +5% Kháng Vật Lý/Phép).",
+      };
+  const starterPotion = isWest
+    ? { name: "Bình Máu Giả Kim Đỏ & Ma Dược", type: "Ma Dược", qty: 2, desc: "Hồi 40% HP & Mana." }
+    : { name: "Hồi Khí Đan / Dung Dịch Hồi Phục", type: "Đan Dược", qty: 2, desc: "Hồi 40% HP & MP." };
+  const inventory = [starterPotion, starterArmor];
+  const gItem = isWest ? golden.westStartItem || golden.startItem : golden.startItem;
+  if (gItem) {
+    inventory.unshift({ ...gItem, qty: 1 });
   }
 
   const skills = structuredClone(world.defaultSkills);
-  if (golden.startSkill) {
-    skills.unshift(structuredClone(golden.startSkill));
+  const gSkill = isWest ? golden.westStartSkill || golden.startSkill : golden.startSkill;
+  if (gSkill) {
+    skills.unshift(structuredClone(gSkill));
   }
 
   const seed = world.conspiracySeeds[Math.floor(Math.random() * world.conspiracySeeds.length)];
@@ -571,6 +590,7 @@ export function getContinuousLevel(state) {
 export function getPhysiqueInfo(player) {
   const found =
     CATALOG_PHYSIQUES.find((ph) => ph.id === player.physiqueId) ||
+    WESTERN_BLOODLINES.find((ph) => ph.id === player.physiqueId) ||
     PHYSIQUES.find((ph) => ph.id === player.physiqueId) ||
     CATALOG_PHYSIQUES.find((ph) => ph.name === player.physiqueName) ||
     PHYSIQUES[0];
@@ -815,7 +835,10 @@ export function computeRealmVitalsBaseline(state) {
   }
 
   const phyInfo = getPhysiqueInfo(p).current;
-  const isSpecialPhysique = phyInfo && phyInfo.id !== "phamthe";
+  const isSpecialPhysique = phyInfo && phyInfo.id !== "phamthe" && phyInfo.id !== "wb_human";
+  const build = BUILD_PATHS.find((b) => b.id === p.buildId);
+  const classHpMult = build?.hpMult || 1;
+  const classMpMult = build?.mpMult || 1;
   const phyHpMult = 1 + (isSpecialPhysique ? 0.18 * tier : 0) + (phyInfo?.group === "Thể Xác" ? 0.15 : 0);
   const phyMpMult = 1 + (isSpecialPhysique ? 0.15 * tier : 0) + (phyInfo?.group === "Linh Hồn" || phyInfo?.group === "Tâm Linh" ? 0.15 : 0);
 
@@ -824,7 +847,7 @@ export function computeRealmVitalsBaseline(state) {
     (p.skills || []).reduce((acc, sk) => {
       const lv = Math.max(1, Number(sk.level) || 1);
       const t = Math.max(1, Number(sk.tier) || 1);
-      const isBodyOrCult = /công pháp|tu luyện|luyện thể|thể chất/i.test(`${sk.category} ${sk.name}`);
+      const isBodyOrCult = /công pháp|tu luyện|luyện thể|thể chất|huyết|kỵ sĩ/i.test(`${sk.category} ${sk.name}`);
       return acc + (isBodyOrCult ? lv * 0.03 * t : lv * 0.01 * t);
     }, 0);
   const skillMpMult =
@@ -836,8 +859,8 @@ export function computeRealmVitalsBaseline(state) {
     }, 0);
 
   return {
-    maxHp: Math.round(baseHp * phyHpMult * skillHpMult),
-    maxMp: Math.round(baseMp * phyMpMult * skillMpMult),
+    maxHp: Math.round(baseHp * classHpMult * phyHpMult * skillHpMult),
+    maxMp: Math.round(baseMp * classMpMult * phyMpMult * skillMpMult),
   };
 }
 

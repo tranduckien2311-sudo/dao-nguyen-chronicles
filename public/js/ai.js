@@ -1,4 +1,4 @@
-import { WORLD_PRESETS, COSMIC_TIERS } from "./worlds.js";
+import { WORLD_PRESETS, COSMIC_TIERS, WESTERN_GRIMOIRES, WESTERN_SPELLS, WESTERN_ITEMS } from "./worlds.js";
 import { computeDerivedStats, getSkillStageDetails } from "./engine.js";
 import {
   ORIGIN_ENTITIES,
@@ -201,10 +201,16 @@ export function buildSystemPrompt(state) {
   const p = state.player;
   const hiddenTail = String(state.hiddenNotes || "").slice(-450);
   const originEntity = ORIGIN_ENTITIES[p.physiqueGroup]?.[0];
+  const isWest = state.worldId === "maphap";
   const catalogHint =
     state.mode === "normal"
-      ? `\n- Gợi ý T${p.tier}: CP[${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Chiến[${pickRandomSample(CATALOG_CHIEN_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Thú[${pickRandomSample(MYTHIC_CREATURES, p.tier, 2).map((c) => c.name).join(",")}]`
+      ? isWest
+        ? `\n- Kho Tây Vực T${p.tier}: MaĐiển[${pickRandomSample(WESTERN_GRIMOIRES, p.tier, 2).map((x) => x.name).join(",")}] Phép[${pickRandomSample(WESTERN_SPELLS, p.tier, 2).map((x) => x.name).join(",")}] Đồ[${pickRandomSample(WESTERN_ITEMS, p.tier, 2).map((x) => x.name).join(",")}]`
+        : `\n- Gợi ý T${p.tier}: CP[${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Chiến[${pickRandomSample(CATALOG_CHIEN_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Thú[${pickRandomSample(MYTHIC_CREATURES, p.tier, 2).map((c) => c.name).join(",")}]`
       : "";
+  const westRule = isWest
+    ? `\n8. PHONG CÁCH PHƯƠNG TÂY: TUYỆT ĐỐI KHÔNG dùng từ Tu Tiên (cấm: linh khí, đan điền, kinh mạch, đan dược, đạo hữu, ngọc giản). Dùng: Ma Lực(Mana), Minh Tưởng, Ma Điển(Grimoire), Ấn Chú(Rune), Ma Dược(Potion/Elixir), Huyết Mạch, Cổ Vật(Relic), Khế Ước, Hội Pháp Sư/Giáo Hội.`
+    : "";
 
   return `GM tiểu thuyết tương tác tiếng Việt. Văn phong:${world.styleRef}. Giọng:${state.tone}.
 [NHÂN VẬT] ${p.name} | ${p.originName} | Thể chất:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng:${p.goldenName}
@@ -222,7 +228,7 @@ export function buildSystemPrompt(state) {
 4. Cấm đột phá mồm: lượt thường không viết đã đột phá & để realmUpdate=null (trừ truyền công/bị phế).
 5. potentialDelta mặc định 0 (chỉ cho khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp >=80đ). Trang bị gắn slot(armor|weapon|accessory).
 6. choices(3-4 mục) bám sát hoàn cảnh & đồ/skill thực tế; statTag chỉ dùng: Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận.
-7. narrative tiếng Việt CỰC NGẮN GỌN (40–80 chữ), chỉ nêu thẳng ý chính, diễn biến & kết quả, KHÔNG hành văn dài dòng. summaryUpdate ≤15 chữ.`;
+7. narrative tiếng Việt CỰC NGẮN GỌN (40–80 chữ), chỉ nêu thẳng ý chính, diễn biến & kết quả, KHÔNG hành văn dài dòng. summaryUpdate ≤15 chữ.${westRule}`;
 }
 
 const DIRECT_MODEL_CACHE = new Map();
