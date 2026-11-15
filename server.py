@@ -58,7 +58,7 @@ class GameHandler(http.server.SimpleHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length).decode("utf-8"))
             api_key = body.get("apiKey") or os.environ.get("GEMINI_API_KEY", "")
-            model = body.get("model", "gemini-2.5-flash")
+            model = body.get("model", "gemini-3.8-flash")
             payload = body.get("payload", {})
 
             if not api_key:
@@ -128,7 +128,7 @@ class GameHandler(http.server.SimpleHTTPRequestHandler):
         with urllib.request.urlopen(req, timeout=75) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
-    def _find_available_models(self, api_key: str, requested: str, limit: int = 6) -> list[str]:
+    def _find_available_models(self, api_key: str, requested: str, limit: int = 15) -> list[str]:
         list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         with urllib.request.urlopen(list_url, timeout=20) as resp:
             data = json.loads(resp.read().decode("utf-8"))

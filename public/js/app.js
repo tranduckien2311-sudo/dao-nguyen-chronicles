@@ -38,7 +38,7 @@ import {
   pushSnapshot,
   exportNovelMarkdown,
 } from "./engine.js";
-import { callGeminiGM, compactStoryMemory } from "./ai.js";
+import { callGeminiGM, compactStoryMemory, listGeminiModels } from "./ai.js";
 
 let settings = loadSettings();
 let state = null;
@@ -1294,16 +1294,10 @@ function openSettingsModal() {
     if (!key) return alert("Hãy dán Gemini API Key trước.");
     $("btn-fetch-models").textContent = "⏳";
     try {
-      const r = await fetch("/api/models", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: key }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Không quét được model");
+      const models = await listGeminiModels(key);
       const sel = $("set-custom-model");
       sel.innerHTML = `<option value="">-- Theo chế độ tự động ở trên --</option>` +
-        (d.models || []).map((m) => `<option value="${escapeHtml(m)}" ${settings.customModel === m ? "selected" : ""}>${escapeHtml(m)}</option>`).join("");
+        models.map((m) => `<option value="${escapeHtml(m)}" ${settings.customModel === m ? "selected" : ""}>${escapeHtml(m)}</option>`).join("");
     } catch (e) {
       alert(e.message);
     } finally {

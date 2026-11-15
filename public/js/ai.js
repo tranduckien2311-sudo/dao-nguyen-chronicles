@@ -187,12 +187,12 @@ const RESPONSE_SCHEMA = {
 export function pickModel(settings, state, isMajorEvent = false) {
   if (settings.customModel) return settings.customModel;
   const pref = settings.modelMode || "auto";
-  if (pref === "pro") return "gemini-2.5-pro";
-  if (pref === "flash") return "gemini-2.5-flash";
+  if (pref === "pro") return "gemini-3.8-pro";
+  if (pref === "flash") return "gemini-3.8-flash";
   if (isMajorEvent || state.player.tier >= 3 || state.mode === "ngodao") {
-    return "gemini-2.5-pro";
+    return "gemini-3.8-pro";
   }
-  return "gemini-2.5-flash";
+  return "gemini-3.8-flash";
 }
 
 export function buildSystemPrompt(state) {
@@ -266,6 +266,102 @@ ${state.authorDirectives || "Không có."}
 12. Luôn trả về đúng JSON Schema, tiếng Việt tự nhiên, giàu hình ảnh, độ dài \`narrative\` khoảng 180–320 chữ để đọc cực sướng trên điện thoại dọc.`;
 }
 
+async function postDirectGemini(apiKey, modelName, payload) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const body = structuredClone(payload);
+  if (!modelName.toLowerCase().includes("pro")) {
+    body.generationConfig = body.generationConfig || {};
+    body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+  let res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 400 && body.generationConfig?.thinkingConfig) {
+    delete body.generationConfig.thinkingConfig;
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+  return res;
+}
+
+export async function listGeminiModels(apiKey) {
+  const isLocal = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname);
+  if (isLocal) {
+    try {
+      const r = await fetch("/api/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        return d.models || [];
+      }
+    } catch {
+      // Fallback to direct Google API
+    }
+  }
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || "Không quét được danh sách model");
+  const excluded = ["omni", "image", "tts", "robotics", "computer-use", "embedding", "aqa", "audio"];
+  return (d.models || [])
+    .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+    .map((m) => m.name.replace(/^models\//, ""))
+    .filter((n) => n.toLowerCase().includes("gemini") && !excluded.some((ex) => n.toLowerCase().includes(ex)))
+    .sort()
+    .reverse();
+}
+
+async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
+  const isLocal = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname);
+  if (isLocal) {
+    try {
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, model, payload }),
+      });
+      if (res.status !== 404 && res.status !== 405) {
+        const data = await res.json();
+        if (!res.ok) {
+          const detailMsg = data.details ? `\n${data.details}` : "";
+          throw new Error(`${data.error || "Lỗi kết nối Gemini API"}${detailMsg}`);
+        }
+        return data;
+      }
+    } catch (e) {
+      if (e.message && e.message.includes("Gemini API Error")) throw e;
+    }
+  }
+
+  let res = await postDirectGemini(apiKey, model, payload);
+  let data = await res.json();
+  if (res.ok) return { ...data, _resolvedModel: model };
+
+  if ([404, 429, 500, 503, 504].includes(res.status)) {
+    const models = await listGeminiModels(apiKey).catch(() => []);
+    const wantPro = model.toLowerCase().includes("pro");
+    const sorted = [...models].sort((a, b) => {
+      const am = (wantPro ? a.includes("pro") : a.includes("flash")) ? 1 : 0;
+      const bm = (wantPro ? b.includes("pro") : b.includes("flash")) ? 1 : 0;
+      return bm - am;
+    });
+    for (const cand of sorted.slice(0, 12)) {
+      if (cand === model) continue;
+      const r2 = await postDirectGemini(apiKey, cand, payload);
+      const d2 = await r2.json();
+      if (r2.ok) return { ...d2, _resolvedModel: cand };
+    }
+  }
+  throw new Error(`Gemini API Error (${res.status}): ${data.error?.message || JSON.stringify(data)}`);
+}
+
 export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent = false }) {
   const apiKey = settings.apiKey?.trim();
   if (!apiKey) {
@@ -297,17 +393,7 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
     },
   };
 
-  const res = await fetch("/api/gemini", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ apiKey, model, payload }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    const detailMsg = data.details ? `\n${data.details}` : "";
-    throw new Error(`${data.error || "Lỗi kết nối Gemini API"}${detailMsg}`);
-  }
+  const data = await callGeminiProxyOrDirect({ apiKey, model, payload });
 
   const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) {
@@ -337,7 +423,7 @@ export async function compactStoryMemory({ settings, state }) {
   const apiKey = settings.apiKey?.trim();
   if (!apiKey) return null;
 
-  const model = settings.customModel || "gemini-2.5-flash";
+  const model = settings.customModel || "gemini-3.8-flash";
   const prompt = `Hãy nén (compact) tóm tắt cốt truyện và sổ tay âm mưu dưới đây thành bản cực kỳ súc tích để tiết kiệm token nhưng KHÔNG làm mất các sự kiện cốt lõi, tên NPC quan trọng, ân oán, lời hứa và âm mưu đang diễn ra.
 
 === TÓM TẮT HIỆN TẠI ===
@@ -362,13 +448,11 @@ ${state.hiddenNotes}`;
     },
   };
 
-  const res = await fetch("/api/gemini", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ apiKey, model, payload }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  return rawText ? JSON.parse(rawText) : null;
+  try {
+    const data = await callGeminiProxyOrDirect({ apiKey, model, payload });
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return rawText ? JSON.parse(rawText) : null;
+  } catch {
+    return null;
+  }
 }
