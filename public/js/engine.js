@@ -513,15 +513,15 @@ export function checkAbsurdOrSuicidalAction(state, userText) {
   const lower = text.toLowerCase();
   if (!text) return null;
 
-  // 1. Hành động quá vô lý / ảo tưởng sức mạnh vượt cấp / spam nhảm
-  const absurdRegex = /(búng tay chết|nhất kích tất sát|vô địch thiên hạ|xóa sổ vũ trụ|giết thiên đạo|xé rách bầu trời|đạp nát thế giới|hóa thánh ngay|ta là thần|one hit|1 hit|hủy diệt hành tinh|triệu hồi admin|hack game|buff bất tử)/i;
+  // 1. Hành động quá vô lý / ảo tưởng sức mạnh vượt cấp / tự bịa cơ duyên vô lý
+  const absurdRegex = /(búng tay chết|nhất kích tất sát|vô địch thiên hạ|xóa sổ vũ trụ|giết thiên đạo|xé rách bầu trời|đạp nát thế giới|hóa thánh ngay|ta là thần|one hit|1 hit|hủy diệt hành tinh|triệu hồi admin|hack game|buff bất tử|bỗng nhiên.*rơi|tự nhiên.*nhặt được|bí kíp.*rơi|thần khí.*rơi)/i;
   if (absurdRegex.test(lower) && (state?.player?.tier || 1) < 4) {
     return {
       type: "heavenly_punishment",
       forceDeath: true,
       title: "⚡ THIÊN ĐẠO BẤT DUNG — THIÊN PHẠT GIÁNG LÂM",
       promptNote:
-        "[THIÊN PHẠT BẮT BUỘC] Người chơi gõ hành động quá vô lý/ngạo mạn vượt xa cảnh giới! Thiên Đạo giáng Cửu Tiêu Thần Lôi trừng phạt, KHÔNG được xoay sở cứu vãn. Hãy đặt stateChanges.hpDelta = -999999 (chết ngay lập tức) và miêu tả kết cục bị Thiên Phạt đánh tan xác.",
+        "[THIÊN PHẠT BẮT BUỘC] Người chơi gõ hành động vô lý/tự bịa cơ duyên hoặc ảo tưởng vượt cấp! Tuyệt đối KHÔNG cho nhận bí kíp/đồ, KHÔNG xoay sở cứu. Hãy viết rõ bối cảnh trong truyện: Thiên Đạo cảm ứng nghịch lý giáng Cửu Tiêu Thần Lôi / cường giả cảm ứng ra tay đánh nát thân xác, đặt stateChanges.hpDelta = -999999.",
     };
   }
 
@@ -533,7 +533,7 @@ export function checkAbsurdOrSuicidalAction(state, userText) {
       forceDeath: true,
       title: "💀 TỰ TÌM ĐƯỜNG CHẾT",
       promptNote:
-        "[NGƯỜI CHƠI TÌM CHẾT] Người chơi tự tìm đường chết hoặc khiêu khích cường giả/cảnh giới quá cao! Tuyệt đối KHÔNG xoay sở cứu sống hay cho thoát thân. Hãy đặt stateChanges.hpDelta = -999999 (rút HP về 0 cho chết ngay lập tức) và miêu tả cái chết thảm khốc.",
+        "[NGƯỜI CHƠI TÌM CHẾT] Người chơi tự tìm đường chết hoặc khiêu khích cường giả! Tuyệt đối KHÔNG cứu sống, nhưng BẮT BUỘC viết rõ bối cảnh hợp logic (vd: bị cường giả nhìn thấu sát ý một chưởng đánh chết, vạn kiếm xuyên tâm, hộ tông đại trận nghiền nát, hoặc tự hủy tâm mạch), KHÔNG viết kiểu xóa sổ trực tiếp cụt lủn. Đặt stateChanges.hpDelta = -999999.",
     };
   }
 

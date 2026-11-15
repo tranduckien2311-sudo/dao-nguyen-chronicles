@@ -614,7 +614,7 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
     const atkHint = /(giết|đánh|chém|tấn công|ám sát|xông|công kích|hạ thủ)/i.test(text)
       ? ` Sát thương ước tính ở cảnh giới [${state.player.realm}] chỉ ~${estDmg} DMG (nếu đối thủ là Chưởng Môn/Trưởng Lão/cảnh giới cao hơn thì đòn này vô hiệu hoặc bị phản sát nặng).`
       : "";
-    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).${atkHint}${absurdCheck ? `\n${absurdCheck.promptNote}` : ""}`;
+    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).${atkHint}${absurdCheck ? `\n${absurdCheck.promptNote}` : kind === "text" ? `\n[KIỂM TRA NGỮ CẢNH] Nếu text nhảm, vô nghĩa, không liên quan hiện trường hoặc tự bịa cơ duyên (vd bí kíp từ trời rơi xuống): BẮT BUỘC giáng Thiên Phạt (trừ 50-100% HP, KHÔNG thưởng đồ). Nếu tìm chết: viết rõ bối cảnh bị cường giả nhìn thấu, một chưởng đánh chết hoặc vạn kiếm xuyên tâm rồi đặt hpDelta=-999999.` : ""}`;
   }
 
   isBusy = true;
