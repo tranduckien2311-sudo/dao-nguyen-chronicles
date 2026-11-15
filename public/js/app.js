@@ -609,12 +609,15 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
       khivan: computeDerivedStats(state.player).effectiveLuck,
     };
     const val = statMap[statTag] ?? state.player.stats.tamtin;
-    const roll = rollCheck(val, 12);
+    const roll = rollCheck(val, 18);
     const estDmg = Math.max(15, Math.round((state.player.maxHp || 150) * 0.16 + val * 3));
     const atkHint = /(giết|đánh|chém|tấn công|ám sát|xông|công kích|hạ thủ)/i.test(text)
       ? ` Sát thương ước tính ở cảnh giới [${state.player.realm}] chỉ ~${estDmg} DMG (nếu đối thủ là Chưởng Môn/Trưởng Lão/cảnh giới cao hơn thì đòn này vô hiệu hoặc bị phản sát nặng).`
       : "";
-    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).${atkHint}${absurdCheck ? `\n${absurdCheck.promptNote}` : kind === "text" ? `\n[KIỂM TRA NGỮ CẢNH] Nếu text nhảm, vô nghĩa, không liên quan hiện trường hoặc tự bịa cơ duyên (vd bí kíp từ trời rơi xuống): BẮT BUỘC giáng Thiên Phạt (trừ 50-100% HP, KHÔNG thưởng đồ). Nếu tìm chết: viết rõ bối cảnh bị cường giả nhìn thấu, một chưởng đánh chết hoặc vạn kiếm xuyên tâm rồi đặt hpDelta=-999999.` : ""}`;
+    const failHazard = /Thất Bại/.test(roll.tier)
+      ? ` [ƯU TIÊN THẤT BẠI] Người chơi không phải thiên kiêu/nhân vật chính! Bắt buộc cho gặp bất lợi thực sự (sập bẫy, bị hãm hại/đâm lén, trúng độc, bị hấp tinh hút tu vi \`cultivationDelta < 0\`, hoặc mất đồ/trừ HP nặng).`
+      : "";
+    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}/${roll.difficulty}).${atkHint}${failHazard}${absurdCheck ? `\n${absurdCheck.promptNote}` : kind === "text" ? `\n[KIỂM TRA NGỮ CẢNH] Nếu text nhảm, vô nghĩa, không liên quan hiện trường hoặc tự bịa cơ duyên (vd bí kíp từ trời rơi xuống): BẮT BUỘC giáng Thiên Phạt (trừ 50-100% HP, KHÔNG thưởng đồ). Nếu tìm chết: viết rõ bối cảnh bị cường giả nhìn thấu, một chưởng đánh chết hoặc vạn kiếm xuyên tâm rồi đặt hpDelta=-999999.` : ""}`;
   }
 
   isBusy = true;
@@ -970,10 +973,10 @@ async function handleBreakthrough() {
       "system"
     );
   } else {
-    state.player.cultivation = 70;
-    state.player.hp = Math.max(10, Math.round(state.player.hp * 0.5));
+    state.player.cultivation = 55;
+    state.player.hp = Math.max(10, Math.round(state.player.hp * 0.35));
     await handlePlayerAction(
-      `[ĐỘT PHÁ THẤT BẠI - TÂM MA QUẤY PHÁ] Tỉ lệ ${check.chance}% (roll ${check.roll}). Thân thể trọng thương, tu vi lùi về 70%. Hãy miêu tả cảnh tượng vượt ải thất bại.`,
+      `[ĐỘT PHÁ THẤT BẠI - TẨU HỎA NHẬP MA] Tỉ lệ ${check.chance}% (roll ${check.roll}). Kinh mạch/Ma lực phản phệ trọng thương (mất 65% HP hiện tại), tiến độ tụt về 55%. Hãy miêu tả cảnh đột phá thất bại, tâm ma quấy phá hoặc bị kẻ khác thừa cơ hãm hại.`,
       "system"
     );
   }

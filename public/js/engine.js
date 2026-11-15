@@ -425,12 +425,12 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   return newState;
 }
 
-export function rollCheck(statValue, difficulty = 12) {
+export function rollCheck(statValue, difficulty = 18) {
   const d20 = Math.floor(Math.random() * 20) + 1;
   const total = d20 + Math.floor(statValue / 2);
   let tier = "Thành Công";
-  if (d20 === 20 || total >= difficulty + 10) tier = "Đại Thành Công";
-  else if (d20 === 1 || total < difficulty - 5) tier = "Đại Thất Bại";
+  if (d20 === 20 || total >= difficulty + 8) tier = "Đại Thành Công";
+  else if (d20 <= 3 || total < difficulty - 4) tier = "Đại Thất Bại";
   else if (total < difficulty) tier = "Thất Bại";
   return { d20, total, difficulty, tier };
 }
@@ -479,7 +479,7 @@ export function resolveCombatCheck(state, userText) {
   const luckMod = Math.floor(derived.effectiveLuck / 6);
   const score = d20 + Math.floor(baseStat / 2) + bonus + luckMod;
 
-  if (d20 === 1 || score < 14) {
+  if (d20 <= 3 || score < 19) {
     return {
       outcome: "Mất Tiên Cơ - Bị Đả Thương",
       reason: "Phán đoán sai ý đồ địch hoặc vận khí bất ổn, bị đả thương và mất nhịp độ.",
@@ -488,7 +488,7 @@ export function resolveCombatCheck(state, userText) {
       enemyDmg: Math.max(10, Math.round(rawEnemyAtk * 1.25)),
     };
   }
-  if (d20 >= 18 || score >= 24) {
+  if (d20 >= 19 || score >= 27) {
     return {
       outcome: "Đoạt Tiên Cơ - Khắc Chế",
       reason: matchedSkill
@@ -555,10 +555,12 @@ export function checkAbsurdOrSuicidalAction(state, userText) {
 
 export function resolveBreakthrough(state) {
   const derived = computeDerivedStats(state.player);
-  const baseChance = 55 + derived.breakthroughBonus;
+  const lvPenalty = Math.min(35, (getContinuousLevel(state) - 1) * 2 + ((state.player.tier || 1) - 1) * 8);
+  const baseChance = 28 + Math.round(derived.breakthroughBonus * 0.7) - lvPenalty;
+  const chance = Math.min(82, Math.max(15, baseChance));
   const roll = Math.floor(Math.random() * 100) + 1;
-  const success = roll <= Math.min(95, Math.max(20, baseChance));
-  return { success, roll, chance: Math.min(95, Math.max(20, baseChance)) };
+  const success = roll <= chance;
+  return { success, roll, chance };
 }
 
 export function canCreateTechnique(state) {
