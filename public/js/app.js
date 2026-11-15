@@ -589,10 +589,53 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
 }
 
 function applyAiResult(res, combatOutcome = null, modelUsed = "") {
+  const prevEnemy = state.mode === "combat" && state.enemy ? state.enemy : null;
   state.turn += 1;
   state.mode = res.mode || "normal";
   state.choices = res.choices || [];
-  state.enemy = res.mode === "combat" ? res.enemy : null;
+  if (res.mode === "combat" && res.enemy) {
+    const nextEnemy = { ...res.enemy };
+    const rawMax = Math.max(1, Number(nextEnemy.maxHp) || 100);
+    const rawHp = Number.isFinite(Number(nextEnemy.hp)) ? Number(nextEnemy.hp) : rawMax;
+    const norm = (s) => String(s || "").trim().toLowerCase();
+    const prevName = norm(prevEnemy?.name);
+    const nextName = norm(nextEnemy.name);
+    const isSameEnemy =
+      prevEnemy &&
+      prevEnemy.maxHp > 0 &&
+      (!nextName ||
+        !prevName ||
+        prevName === nextName ||
+        prevName.includes(nextName) ||
+        nextName.includes(prevName));
+    if (isSameEnemy) {
+      const prevMax = Math.max(1, Number(prevEnemy.maxHp));
+      const prevHp = Math.max(0, Math.min(prevMax, Number(prevEnemy.hp) ?? prevMax));
+      const allowMaxHpChange = nextEnemy.maxHpChanged === true && rawMax > 0;
+      const allowHeal = nextEnemy.hpHealed === true;
+      const lockedMax = allowMaxHpChange ? rawMax : prevMax;
+      let nextHp = rawHp;
+      if (!allowMaxHpChange && rawMax !== lockedMax) {
+        nextHp = rawHp >= rawMax ? prevHp : Math.round((rawHp / rawMax) * lockedMax);
+      }
+      const maxAllowedHp = allowHeal ? lockedMax : Math.min(prevHp, lockedMax);
+      nextEnemy.maxHp = lockedMax;
+      nextEnemy.hp = Math.max(0, Math.min(maxAllowedHp, nextHp));
+    } else {
+      nextEnemy.maxHp = rawMax;
+      nextEnemy.hp = Math.max(0, Math.min(rawMax, rawHp));
+    }
+    delete nextEnemy.maxHpChanged;
+    delete nextEnemy.hpHealed;
+    if (nextEnemy.hp <= 0) {
+      state.mode = "normal";
+      state.enemy = null;
+    } else {
+      state.enemy = nextEnemy;
+    }
+  } else {
+    state.enemy = null;
+  }
   state.ngodaoQuestion = res.mode === "ngodao" ? res.ngodaoQuestion : null;
 
   const sc = res.stateChanges || {};

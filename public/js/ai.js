@@ -46,6 +46,8 @@ const RESPONSE_SCHEMA = {
         realm: { type: "STRING" },
         hp: { type: "INTEGER" },
         maxHp: { type: "INTEGER" },
+        maxHpChanged: { type: "BOOLEAN", nullable: true },
+        hpHealed: { type: "BOOLEAN", nullable: true },
         intent: { type: "STRING" },
       },
     },
@@ -216,7 +218,7 @@ Văn phong tham khảo: ${world.styleRef}. Giọng văn: ${state.tone}.
 - Phòng ngự & Kháng tính: Giáp đang mặc [${state.player.defense?.equippedArmor || "Không"}], Vũ khí [${state.player.equipment?.weapon || "Không"}], Phụ kiện [${state.player.equipment?.accessory || "Không"}], Tổng Hộ Giáp ${derived.baseArmor}, Kháng Vật Lý ${derived.effectiveResist.physical}%, Kháng Phép/Nguyên Tố ${derived.effectiveResist.magic}%, Kháng Linh Hồn ${derived.effectiveResist.soul}%, Kháng Độc/Tà Khí ${derived.effectiveResist.poison}%, Kháng Quy Tắc/Thời-Không ${derived.effectiveResist.law}%.${derived.equipmentEffects?.length ? `\n- Hiệu ứng trang bị đang kích hoạt: ${derived.equipmentEffects.join(" | ")}` : ""}
 - Kỹ năng: ${state.player.skills.map((s) => `${s.name}${s.isDao ? " [ĐẠO]" : ""} (Bậc ${s.tier} Lv.${s.level}, ${s.grade}, Ý cảnh: ${s.daoIntent})`).join("; ")}
 - Túi đồ: ${state.player.inventory.map((i) => `${i.name} x${i.qty}`).join("; ")}
-- Nhân mạch: ${state.player.relationships.map((r) => `${r.name} [${r.type}, Hảo cảm ${r.affinity}]`).join("; ")}
+- Nhân mạch: ${state.player.relationships.map((r) => `${r.name} [${r.type}, Hảo cảm ${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- Địch thủ đang giao chiến (HP TỐI ĐA ĐÃ KHÓA): ${state.enemy.name} (${state.enemy.realm}) | HP hiện tại: ${state.enemy.hp}/${state.enemy.maxHp} | Ý đồ trước: ${state.enemy.intent || "Đang giao chiến"}` : ""}
 
 === GỢI Ý KHO THẾ GIỚI (CHỈ DÙNG THAM KHẢO ĐỂ TIẾT KIỆM TOKEN) ===
 - Công pháp phù hợp Tầng ${state.player.tier}: ${pickRandomSample(CATALOG_CONG_PHAP, state.player.tier, 3).map((x) => `${x.name} (rèn -> ${x.forgesPhysique})`).join("; ")}
@@ -235,7 +237,7 @@ ${state.authorDirectives || "Không có."}
 1. Tuyệt đối KHÔNG tiết lộ trực tiếp Sổ Tay Âm Mưu Ẩn, mà hãy rải manh mối tinh tế (ánh mắt, lời nói mâu thuẫn, vật chứng) để người chơi tự suy luận. Nếu Tâm trí (${state.player.stats.tamtin}) cao, có thể mô tả linh cảm bất an rõ hơn. Ở cảnh giới thấp (Luyện Khí, Trúc Cơ, Kim Đan, Nguyên Anh — trước Tầng 1 Hóa Thần / Ma Đạo Sư / Chấp Hành Quan, trừ khi có công pháp/kỳ ngộ/pháp bảo đặc biệt), TUYỆT ĐỐI KHÔNG viết cả nhân vật chính lẫn NPC Trúc Cơ/Kim Đan/Nguyên Anh có "Thần Thức" — dưới Hóa Thần chỉ có ngũ quan nhạy bén, linh cảm hoặc linh giác; chỉ từ **Hóa Thần** trở lên mới ngưng tụ được Thần Thức!
 2. Lồng ghép các yếu tố: tổ chức/tông môn/thế gia, bán thần/tiên thần hạ phàm, di tích văn minh cổ, bảo vật/thiên tài địa bảo, truyền công hoặc bị hút tu vị.
 3. Thỉnh thoảng (khoảng 15-20% cơ hội ở lượt khám phá) hãy kích hoạt mode "ngodao" và đặt một **Câu hỏi Ngộ Đạo** về tự nhiên, vật lý, triết học hoặc quy luật vũ trụ để người chơi trả lời.
-4. Nếu vào chiến đấu, đặt mode "combat" và điền đầy đủ thông tin \`enemy\` (kèm \`intent\` là ý đồ ra chiêu tiếp theo của địch). Các trường \`enemy.name\` (≤ 8 chữ), \`enemy.realm\` (≤ 6 chữ), \`enemy.intent\` (≤ 25 chữ) PHẢI cực kỳ ngắn gọn, không lặp chữ.
+4. Nếu vào chiến đấu, đặt mode "combat" và điền đầy đủ thông tin \`enemy\` (kèm \`intent\` là ý đồ ra chiêu tiếp theo của địch). Các trường \`enemy.name\` (≤ 8 chữ), \`enemy.realm\` (≤ 6 chữ), \`enemy.intent\` (≤ 25 chữ) PHẢI cực kỳ ngắn gọn, không lặp chữ. **QUAN TRỌNG**: Khi đang giao chiến với cùng một địch thủ, \`enemy.maxHp\` PHẢI GIỮ NGUYÊN CỐ ĐỊNH như lượt trước và \`enemy.hp\` kế thừa đúng từ HP hiện tại (không tự ý reset đầy máu hay đổi \`maxHp\`). **Ngoại lệ hợp lệ**: nếu địch dính skill giảm Max HP, được buff tăng Max HP hoặc giải trừ debuff khiến Max HP thay đổi, đặt \`enemy.maxHpChanged = true\` và cập nhật \`enemy.maxHp\`; nếu địch tự hồi máu/được hồi phục/buff tăng HP hiện tại, đặt \`enemy.hpHealed = true\`. Nếu \`enemy.hp <= 0\`, chuyển \`mode\` về \`"normal"\` và đặt \`enemy = null\`.
 5. Khi nhận kết quả tung xúc xắc từ Engine (ví dụ: Mất Tiên Cơ, Đoạt Tiên Cơ, Đại Thành Công, Thất Bại), BẮT BUỘC viết diễn biến và trừ/cộng HP, MP, Tu vi khớp với kết quả đó.
 6. Danh vọng cao thu hút cả cơ hội VIP lẫn sát thủ/ganh ghét. Nghiệp lực cao dễ gặp tâm ma/tai họa.
 7. VÒNG LẶP NHÂN QUẢ ĐỊNH SẴN (Causal Loop): Khi nhân vật du hành về quá khứ, hành động của họ KHÔNG dễ dàng xóa bỏ lịch sử mà thường CHÍNH LÀ NGUYÊN NHÂN ĐỊNH SẴN tạo ra các di tích, lời tiên tri, bảo vật hoặc sự kiện ở hiện tại (Bootstrap Paradox). Hãy khéo léo gắn kết các Mỏ Neo Nhân Quả! Chỉ ở Tầng 4–5 mới có thể bẻ gãy hoàn toàn định mệnh nhân quả.
