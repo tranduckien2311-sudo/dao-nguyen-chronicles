@@ -292,7 +292,7 @@ async function postDirectGemini(apiKey, modelName, payload) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
-    30000
+    20000
   );
   if (res.status === 400 && body.generationConfig?.thinkingConfig) {
     delete body.generationConfig.thinkingConfig;
@@ -303,7 +303,7 @@ async function postDirectGemini(apiKey, modelName, payload) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       },
-      30000
+      20000
     );
   }
   return res;
@@ -367,7 +367,10 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
 
   const wantPro = model.toLowerCase().includes("pro");
   const cacheKey = `${apiKey}:${wantPro}`;
-  const activeModel = DIRECT_MODEL_CACHE.get(cacheKey) || model;
+  const storedCache = (() => {
+    try { return JSON.parse(localStorage.getItem("dao_nguyen_model_cache") || "{}")[cacheKey]; } catch { return null; }
+  })();
+  const activeModel = DIRECT_MODEL_CACHE.get(cacheKey) || storedCache || model;
 
   let res;
   let data = {};
@@ -389,13 +392,18 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
       return tierMatch * 4 + notLite * 2 + notExp;
     };
     const sorted = [...models].sort((a, b) => score(b) - score(a));
-    for (const cand of sorted.slice(0, 6)) {
+    for (const cand of sorted.slice(0, 3)) {
       if (cand === activeModel) continue;
       try {
         const r2 = await postDirectGemini(apiKey, cand, payload);
         const d2 = await r2.json();
         if (r2.ok) {
           DIRECT_MODEL_CACHE.set(cacheKey, cand);
+          try {
+            const m = JSON.parse(localStorage.getItem("dao_nguyen_model_cache") || "{}");
+            m[cacheKey] = cand;
+            localStorage.setItem("dao_nguyen_model_cache", JSON.stringify(m));
+          } catch {}
           return { ...d2, _resolvedModel: cand };
         }
       } catch {

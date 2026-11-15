@@ -427,7 +427,11 @@ function renderFeed() {
     .join("");
 
   if (isBusy) {
-    feed.innerHTML += `<div class="loading-bubble">⏳ Thiên Đạo AI đang diễn hóa nhân quả...</div>`;
+    feed.innerHTML += `<div class="loading-bubble" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>⏳ Thiên Đạo AI đang diễn hóa nhân quả...</span><button id="btn-cancel-wait" class="mini-btn" type="button">Hủy chờ</button></div>`;
+    $("btn-cancel-wait")?.addEventListener("click", () => {
+      isBusy = false;
+      renderAll();
+    });
   }
   feed.scrollTop = feed.scrollHeight;
 }
