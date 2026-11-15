@@ -1,4 +1,4 @@
-import { WORLD_PRESETS, ORIGINS, GOLDEN_FINGERS, BUILD_PATHS, COSMIC_TIERS, PHYSIQUES, WESTERN_BLOODLINES } from "./worlds.js";
+import { WORLD_PRESETS, ORIGINS, GOLDEN_FINGERS, BUILD_PATHS, WESTERN_CLASSES, COSMIC_TIERS, PHYSIQUES, WESTERN_BLOODLINES } from "./worlds.js";
 import { CATALOG_PHYSIQUES } from "./catalog.js";
 
 const STORAGE_KEY = "dao_nguyen_saves_v1";
@@ -246,8 +246,11 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   const world = WORLD_PRESETS[worldId];
   const origin = ORIGINS.find((o) => o.id === originId) || ORIGINS[0];
   const golden = GOLDEN_FINGERS.find((g) => g.id === goldenId) || GOLDEN_FINGERS[0];
-  const build = BUILD_PATHS.find((b) => b.id === buildId) || BUILD_PATHS[0];
   const isWest = worldId === "maphap";
+  const build =
+    WESTERN_CLASSES.find((b) => b.id === buildId) ||
+    BUILD_PATHS.find((b) => b.id === buildId) ||
+    (isWest ? WESTERN_CLASSES[0] : BUILD_PATHS[0]);
   const physique =
     PHYSIQUES.find((ph) => ph.id === physiqueId) ||
     WESTERN_BLOODLINES.find((ph) => ph.id === physiqueId) ||
@@ -271,6 +274,11 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   if (buildId === "phaptu") baseStats.tamtin += 5;
   if (buildId === "hontu" || buildId === "phapbao" || buildId === "nguthu") baseStats.linhhon += 5;
   if (buildId === "daotu") baseStats.ngotinh += 5;
+  if (build.id?.startsWith("d2_") && build.startBonus) {
+    for (const [k, v] of Object.entries(build.startBonus)) {
+      if (k in baseStats) baseStats[k] += v;
+    }
+  }
 
   for (const [k, v] of Object.entries(origin.bonus || {})) {
     if (k in baseStats) baseStats[k] += v;
@@ -320,6 +328,9 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   }
 
   const skills = structuredClone(world.defaultSkills);
+  if (build.startSkill) {
+    skills.unshift(structuredClone(build.startSkill));
+  }
   const gSkill = isWest ? golden.westStartSkill || golden.startSkill : golden.startSkill;
   if (gSkill) {
     skills.unshift(structuredClone(gSkill));
@@ -836,7 +847,7 @@ export function computeRealmVitalsBaseline(state) {
 
   const phyInfo = getPhysiqueInfo(p).current;
   const isSpecialPhysique = phyInfo && phyInfo.id !== "phamthe" && phyInfo.id !== "wb_human";
-  const build = BUILD_PATHS.find((b) => b.id === p.buildId);
+  const build = WESTERN_CLASSES.find((b) => b.id === p.buildId) || BUILD_PATHS.find((b) => b.id === p.buildId);
   const classHpMult = build?.hpMult || 1;
   const classMpMult = build?.mpMult || 1;
   const phyHpMult = 1 + (isSpecialPhysique ? 0.18 * tier : 0) + (phyInfo?.group === "Thể Xác" ? 0.15 : 0);

@@ -7,6 +7,7 @@ import {
   SKILL_TIERS,
   PHYSIQUES,
   WESTERN_BLOODLINES,
+  WESTERN_CLASSES,
   WESTERN_GRIMOIRES,
   WESTERN_SPELLS,
   WESTERN_ITEMS,
@@ -1093,10 +1094,11 @@ function openNewGameModal() {
     const isW = wid === "maphap";
     const w = WORLD_PRESETS[wid];
     $("ng-prof").innerHTML = w.professions.map((p) => `<option value="${p}">${p}</option>`).join("");
-    $("ng-build").innerHTML = BUILD_PATHS.map((b) => {
+    const classPool = isW ? WESTERN_CLASSES : BUILD_PATHS;
+    $("ng-build").innerHTML = classPool.map((b) => {
       const hpTag = b.hpMult >= 1 ? `+${Math.round((b.hpMult - 1) * 100)}% HP` : `${Math.round((b.hpMult - 1) * 100)}% HP`;
       const mpTag = b.mpMult >= 1 ? `+${Math.round((b.mpMult - 1) * 100)}% MP` : `${Math.round((b.mpMult - 1) * 100)}% MP`;
-      return `<option value="${b.id}">${isW ? b.westName : b.name} (${hpTag}, ${mpTag})</option>`;
+      return `<option value="${b.id}">${b.name} (${hpTag}, ${mpTag})</option>`;
     }).join("");
     $("ng-golden").innerHTML = GOLDEN_FINGERS.map((g) => `<option value="${g.id}">${isW && g.westName ? g.westName : g.name}</option>`).join("");
     $("ng-physique").innerHTML = isW
