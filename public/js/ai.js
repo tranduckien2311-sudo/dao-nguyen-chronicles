@@ -292,7 +292,7 @@ async function postDirectGemini(apiKey, modelName, payload) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
-    20000
+    35000
   );
   if (res.status === 400 && body.generationConfig?.thinkingConfig) {
     delete body.generationConfig.thinkingConfig;
@@ -303,7 +303,7 @@ async function postDirectGemini(apiKey, modelName, payload) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       },
-      20000
+      35000
     );
   }
   return res;
@@ -383,6 +383,12 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
   }
 
   if ([404, 429, 500, 503, 504].includes(res.status)) {
+    DIRECT_MODEL_CACHE.delete(cacheKey);
+    try {
+      const m = JSON.parse(localStorage.getItem("dao_nguyen_model_cache") || "{}");
+      delete m[cacheKey];
+      localStorage.setItem("dao_nguyen_model_cache", JSON.stringify(m));
+    } catch {}
     const models = await listGeminiModels(apiKey).catch(() => []);
     const score = (n) => {
       const low = n.toLowerCase();
@@ -391,9 +397,8 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
       const notExp = !low.includes("exp") && !low.includes("preview") ? 1 : 0;
       return tierMatch * 4 + notLite * 2 + notExp;
     };
-    const sorted = [...models].sort((a, b) => score(b) - score(a));
-    for (const cand of sorted.slice(0, 3)) {
-      if (cand === activeModel) continue;
+    const sorted = [...models].filter((c) => c !== activeModel).sort((a, b) => score(b) - score(a));
+    for (const cand of sorted.slice(0, 5)) {
       try {
         const r2 = await postDirectGemini(apiKey, cand, payload);
         const d2 = await r2.json();
@@ -406,10 +411,14 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
           } catch {}
           return { ...d2, _resolvedModel: cand };
         }
+        if (r2.status !== 404) data = d2;
       } catch {
         // Try next candidate
       }
     }
+  }
+  if (res.status === 503) {
+    throw new Error("Máy chủ Google Gemini đang quá tải tạm thời (503 High Demand). Hãy đợi 10–20 giây rồi bấm gửi lại, hoặc đổi model khác trong ⚙️ Cài Đặt.");
   }
   throw new Error(`Gemini API Error (${res.status}): ${data.error?.message || "Quá thời gian chờ hoặc hết quota. Hãy chọn model Flash trong ⚙️ Cài Đặt."}`);
 }
