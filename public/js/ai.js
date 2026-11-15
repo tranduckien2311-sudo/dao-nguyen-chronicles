@@ -197,75 +197,37 @@ export function buildSystemPrompt(state) {
   const world = WORLD_PRESETS[state.worldId];
   const tierInfo = COSMIC_TIERS[state.player.tier - 1];
   const derived = computeDerivedStats(state.player);
+  const p = state.player;
+  const hiddenTail = String(state.hiddenNotes || "").slice(-700);
+  const originEntity = ORIGIN_ENTITIES[p.physiqueGroup]?.[0];
 
-  return `Bạn là Game Master (GM) đại tài dẫn dắt một bộ tiểu thuyết mạng tương tác đa vũ trụ bằng tiếng Việt.
-Văn phong tham khảo: ${world.styleRef}. Giọng văn: ${state.tone}.
+  return `Bạn là Game Master (GM) tiểu thuyết tương tác đa vũ trụ tiếng Việt. Văn phong: ${world.styleRef}. Giọng: ${state.tone}.
 
-=== VŨ TRỤ QUAN 5 TẦNG ===
-- Tầng 1–3 là vô vàn thế giới song song theo nhánh cốt truyện (${world.name}).
-- Tầng 2 là Tân Thần Giới (Thiên Đình, Olympus, Asgard, Heliopolis, Giáo Hội...).
-- Tầng 3 là Cổ Thần Giới (Thái Cổ Tổ Vu, Titan, Ngoại Thần Lovecraft, Văn minh 4D–11D).
-- Tầng 4 (Hỗn Độn Đa Nguyên) & Tầng 5 (Nguyên Thủy Chân Lý - Vạn Đạo Quy Nguyên) là DUY NHẤT, điểm hội tụ của mọi nhánh.
-- Hiện tại nhân vật đang ở: ${tierInfo.name} | Giới vực: ${state.currentParallelRealm} | Dòng thời gian: ${state.timeline || "Hiện Tại"} | Trạng thái Âm Phủ: ${state.isAfterlife ? "ĐANG Ở ÂM GIỚI (TU QUỶ)" : "Dương gian"}.
-- Các Mỏ Neo Nhân Quả đã gieo: ${(state.causalAnchors || []).join(" | ") || "Chưa có"}.
+=== BỐI CẢNH & NHÂN VẬT ===
+- Thế giới: ${tierInfo.name} | Giới vực: ${state.currentParallelRealm} | Dòng TG: ${state.timeline || "Hiện Tại"} | ${state.isAfterlife ? "ÂM GIỚI (TU QUỶ)" : "Dương gian"} | Mỏ neo: ${(state.causalAnchors || []).slice(-4).join(" | ") || "Chưa có"}
+- ${p.name} | ${p.originName} | Thể chất: ${p.physiqueName || "Phàm Thể"} (${p.physiqueGroup || "Cơ Bản"}, ${p.physiqueProgress || 0}%, T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng: ${p.goldenName}
+- Cảnh giới: ${p.realm} | Tuổi: ${p.age}/${p.lifespan} | HP: ${p.hp}/${p.maxHp} | MP: ${p.mp}/${p.maxMp} | Tu vi: ${p.cultivation}%
+- Chỉ số: Căn cốt ${p.stats.cancot}, Tâm trí ${p.stats.tamtin}, Linh hồn ${p.stats.linhhon}, Ngộ tính ${p.stats.ngotinh}, Thiên phú ${p.stats.thienphu}, Khí vận ${p.stats.khivan}, Công đức ${p.stats.congduc}, Nghiệp lực ${p.stats.nghiepluc}, Nhân duyên ${p.stats.nhanduyen}, Danh vọng ${p.stats.danhvong} (May mắn thực ${derived.effectiveLuck}, Nhạy âm mưu ${derived.conspiracySense}).
+- Thần Thức: ${derived.hasDivineSense ? "ĐÃ KHAI MỞ" : "CHƯA CÓ (dưới Hóa Thần cấm viết dùng thần thức, chỉ có ngũ quan/linh cảm)"}.
+- Trang bị & Kháng: Giáp [${p.defense?.equippedArmor || "Không"}], Vũ khí [${p.equipment?.weapon || "Không"}], Phụ kiện [${p.equipment?.accessory || "Không"}], Giáp ${derived.baseArmor}, Kháng VL ${derived.effectiveResist.physical}% / Phép ${derived.effectiveResist.magic}% / Hồn ${derived.effectiveResist.soul}% / Độc ${derived.effectiveResist.poison}% / Luật ${derived.effectiveResist.law}%.${derived.equipmentEffects?.length ? ` Hiệu ứng: ${derived.equipmentEffects.join(" | ")}` : ""}
+- Kỹ năng: ${p.skills.map((s) => `${s.name}${s.isDao ? "[ĐẠO]" : ""}(B${s.tier}L${s.level},${getSkillStageDetails(s).summaryText})`).join("; ")}
+- Túi đồ: ${p.inventory.slice(-10).map((i) => `${i.name}x${i.qty}`).join("; ")}
+- Nhân mạch: ${p.relationships.slice(-8).map((r) => `${r.name}[${r.type},${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- ĐỊCH ĐANG CHIẾN (KHÓA maxHp): ${state.enemy.name} (${state.enemy.realm}) | HP: ${state.enemy.hp}/${state.enemy.maxHp} | Ý đồ: ${state.enemy.intent || "Đang đánh"}` : ""}
+- Gợi ý T${p.tier}: Công pháp [${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 2).map((x) => x.name).join(", ")}]; Chiến pháp [${pickRandomSample(CATALOG_CHIEN_PHAP, p.tier, 2).map((x) => x.name).join(", ")}]; Sinh vật [${pickRandomSample(MYTHIC_CREATURES, p.tier, 2).map((c) => c.name).join(", ")}].
 
-=== NHÂN VẬT ===
-- Tên: ${state.player.name} | Xuất thân: ${state.player.originName} | Thể chất: ${state.player.physiqueName || "Phàm Thể"} (${state.player.physiqueGroup || "Cơ Bản"}, Tiến độ lột xác: ${state.player.physiqueProgress || 0}%, Thức tỉnh Thể Chất: ${state.player.tier}/5 Tầng${state.player.tier >= 4 ? " — ĐÃ HÓA ĐẠO" : ""}) | Bàn tay vàng: ${state.player.goldenName}
-- Cảnh giới: ${state.player.realm} | Tuổi/Thọ nguyên: ${state.player.age}/${state.player.lifespan}
-- HP: ${state.player.hp}/${state.player.maxHp} | MP: ${state.player.mp}/${state.player.maxMp} | Tu vi: ${state.player.cultivation}%
-- Chỉ số gốc: Căn cốt ${state.player.stats.cancot}, Tâm trí ${state.player.stats.tamtin}, Linh hồn ${state.player.stats.linhhon}, Ngộ tính ${state.player.stats.ngotinh}, Thiên phú ${state.player.stats.thienphu}, Khí vận ${state.player.stats.khivan}, Công đức ${state.player.stats.congduc}, Nghiệp lực ${state.player.stats.nghiepluc}, Nhân duyên ${state.player.stats.nhanduyen}, Danh vọng ${state.player.stats.danhvong}.
-- Chỉ số cộng hưởng: Thiên phú thực ${derived.effectiveTalent}, May mắn thực ${derived.effectiveLuck}, Nhạy bén âm mưu ${derived.conspiracySense}, Kháng linh hồn ${derived.soulDefense}, Trạng thái Thần Thức: ${derived.hasDivineSense ? "ĐÃ KHAI MỞ (có thể dùng Thần Thức/Nguyên Thần)" : "CHƯA CÓ THẦN THỨC (tuyệt đối không viết nhân vật dùng thần thức, chỉ có ngũ quan và linh cảm mơ hồ)"}.
-- Phòng ngự & Kháng tính: Giáp đang mặc [${state.player.defense?.equippedArmor || "Không"}], Vũ khí [${state.player.equipment?.weapon || "Không"}], Phụ kiện [${state.player.equipment?.accessory || "Không"}], Tổng Hộ Giáp ${derived.baseArmor}, Kháng Vật Lý ${derived.effectiveResist.physical}%, Kháng Phép/Nguyên Tố ${derived.effectiveResist.magic}%, Kháng Linh Hồn ${derived.effectiveResist.soul}%, Kháng Độc/Tà Khí ${derived.effectiveResist.poison}%, Kháng Quy Tắc/Thời-Không ${derived.effectiveResist.law}%.${derived.equipmentEffects?.length ? `\n- Hiệu ứng trang bị đang kích hoạt: ${derived.equipmentEffects.join(" | ")}` : ""}
-- Kỹ năng: ${state.player.skills.map((s) => {
-    const st = getSkillStageDetails(s);
-    const spText = st.specials.length ? ` | Đặc hiệu: ${st.specials[st.specials.length - 1]}` : "";
-    return `${s.name}${s.isDao ? " [ĐẠO]" : ""} (Bậc ${s.tier} Lv.${s.level}, ${s.grade}, ${st.summaryText}, Ý cảnh: ${s.daoIntent}${spText})`;
-  }).join("; ")}
-- Túi đồ: ${state.player.inventory.map((i) => `${i.name} x${i.qty}`).join("; ")}
-- Nhân mạch: ${state.player.relationships.map((r) => `${r.name} [${r.type}, Hảo cảm ${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- Địch thủ đang giao chiến (HP TỐI ĐA ĐÃ KHÓA): ${state.enemy.name} (${state.enemy.realm}) | HP hiện tại: ${state.enemy.hp}/${state.enemy.maxHp} | Ý đồ trước: ${state.enemy.intent || "Đang giao chiến"}` : ""}
+=== ÂM MƯU ẨN (KHÔNG TIẾT LỘ TRỰC TIẾP, CHỈ RẢI MANH MỐI) ===
+${hiddenTail}
+- Liên kết gốc: ${originEntity?.name || "Đạo Nguyên Chi Tổ"} — ${originEntity?.secret || "Càng tu cao càng lộ chân tướng vật chứa."}
+- Chỉ đạo Tác giả: ${state.authorDirectives || "Không."}
 
-=== GỢI Ý KHO THẾ GIỚI (CHỈ DÙNG THAM KHẢO ĐỂ TIẾT KIỆM TOKEN) ===
-- Công pháp phù hợp Tầng ${state.player.tier}: ${pickRandomSample(CATALOG_CONG_PHAP, state.player.tier, 3).map((x) => `${x.name} (rèn -> ${x.forgesPhysique})`).join("; ")}
-- Chiến pháp phù hợp Tầng ${state.player.tier}: ${pickRandomSample(CATALOG_CHIEN_PHAP, state.player.tier, 3).map((x) => `${x.name} [hợp ${x.compatiblePhysique}]`).join("; ")}
-- Thuật phù hợp Tầng ${state.player.tier}: ${pickRandomSample(CATALOG_THUAT, state.player.tier, 3).map((x) => x.name).join("; ")}
-- Sinh vật huyền bí Đông-Tây có thể gặp/làm Ngự Thú: ${pickRandomSample(MYTHIC_CREATURES, state.player.tier, 4).map((c) => `${c.name} (${c.culture})`).join("; ")}
-
-=== SỔ TAY ÂM MƯU ẨN (NGƯỜI CHƠI KHÔNG THẤY) ===
-${state.hiddenNotes}
-[CHÂN TƯỚNG VẠN PHÁP - RẢI MANH MỐI TINH TẾ]: Toàn bộ công pháp, chiến pháp, thuật và thể chất tầng thấp đều được diễn hóa từ trên xuống dưới bởi các Tồn Tại Tầng 3–5. Thể chất hiện tại (${state.player.physiqueName || "Phàm Thể"}) liên kết ngầm với: ${(ORIGIN_ENTITIES[state.player.physiqueGroup]?.[0]?.name || "Đạo Nguyên Tối Hậu Chi Tổ (Tầng 5)")} — ${ORIGIN_ENTITIES[state.player.physiqueGroup]?.[0]?.secret || "Càng tu lên cao, nhân vật càng trở thành một phần hoặc vật chứa của Tồn Tại gốc, trừ khi tự sáng tạo đường riêng để siêu thoát/phản sát!"}
-
-=== CHỈ ĐẠO TỪ MODULE TÁC GIẢ ===
-${state.authorDirectives || "Không có."}
-
-=== QUY TẮC DẪN TRUYỆN ===
-1. Tuyệt đối KHÔNG tiết lộ trực tiếp Sổ Tay Âm Mưu Ẩn, mà hãy rải manh mối tinh tế (ánh mắt, lời nói mâu thuẫn, vật chứng) để người chơi tự suy luận. Nếu Tâm trí (${state.player.stats.tamtin}) cao, có thể mô tả linh cảm bất an rõ hơn. Ở cảnh giới thấp (Luyện Khí, Trúc Cơ, Kim Đan, Nguyên Anh — trước Tầng 1 Hóa Thần / Ma Đạo Sư / Chấp Hành Quan, trừ khi có công pháp/kỳ ngộ/pháp bảo đặc biệt), TUYỆT ĐỐI KHÔNG viết cả nhân vật chính lẫn NPC Trúc Cơ/Kim Đan/Nguyên Anh có "Thần Thức" — dưới Hóa Thần chỉ có ngũ quan nhạy bén, linh cảm hoặc linh giác; chỉ từ **Hóa Thần** trở lên mới ngưng tụ được Thần Thức!
-2. Lồng ghép các yếu tố: tổ chức/tông môn/thế gia, bán thần/tiên thần hạ phàm, di tích văn minh cổ, bảo vật/thiên tài địa bảo, truyền công hoặc bị hút tu vị.
-3. Thỉnh thoảng (khoảng 15-20% cơ hội ở lượt khám phá) hãy kích hoạt mode "ngodao" và đặt một **Câu hỏi Ngộ Đạo** về tự nhiên, vật lý, triết học hoặc quy luật vũ trụ để người chơi trả lời.
-4. Nếu vào chiến đấu, đặt mode "combat" và điền đầy đủ thông tin \`enemy\` (kèm \`intent\` là ý đồ ra chiêu tiếp theo của địch). Các trường \`enemy.name\` (≤ 8 chữ), \`enemy.realm\` (≤ 6 chữ), \`enemy.intent\` (≤ 25 chữ) PHẢI cực kỳ ngắn gọn, không lặp chữ. Tham chiếu HP địch theo cảnh giới: Luyện Khí 100–1.000+ (thể chất/công pháp đặc biệt có thể cao hơn), Trúc Cơ 1.000–5.000, Kim Đan 5.000–10.000, Nguyên Anh 10.000–50.000, Hóa Thần+ 50.000+. **QUAN TRỌNG**: Khi đang giao chiến với cùng một địch thủ, \`enemy.maxHp\` PHẢI GIỮ NGUYÊN CỐ ĐỊNH như lượt trước và \`enemy.hp\` kế thừa đúng từ HP hiện tại (không tự ý reset đầy máu hay đổi \`maxHp\`). **Ngoại lệ hợp lệ**: nếu địch dính skill giảm Max HP, được buff tăng Max HP hoặc giải trừ debuff khiến Max HP thay đổi, đặt \`enemy.maxHpChanged = true\` và cập nhật \`enemy.maxHp\`; nếu địch tự hồi máu/được hồi phục/buff tăng HP hiện tại, đặt \`enemy.hpHealed = true\`. Nếu \`enemy.hp <= 0\`, chuyển \`mode\` về \`"normal"\` và đặt \`enemy = null\`.
-5. Khi nhận kết quả tung xúc xắc từ Engine (ví dụ: Mất Tiên Cơ, Đoạt Tiên Cơ, Đại Thành Công, Thất Bại), BẮT BUỘC viết diễn biến và trừ/cộng HP, MP, Tu vi khớp với kết quả đó.
-6. Danh vọng cao thu hút cả cơ hội VIP lẫn sát thủ/ganh ghét. Nghiệp lực cao dễ gặp tâm ma/tai họa.
-7. VÒNG LẶP NHÂN QUẢ ĐỊNH SẴN (Causal Loop): Khi nhân vật du hành về quá khứ, hành động của họ KHÔNG dễ dàng xóa bỏ lịch sử mà thường CHÍNH LÀ NGUYÊN NHÂN ĐỊNH SẴN tạo ra các di tích, lời tiên tri, bảo vật hoặc sự kiện ở hiện tại (Bootstrap Paradox). Hãy khéo léo gắn kết các Mỏ Neo Nhân Quả! Chỉ ở Tầng 4–5 mới có thể bẻ gãy hoàn toàn định mệnh nhân quả.
-8. ĐỒNG BỘ CẢNH GIỚI & THỂ CHẤT (CẤM ĐỘT PHÁ MỒM):
-   - Ở lượt chơi thường, TUYỆT ĐỐI KHÔNG tự ý viết trong \`narrative\` là nhân vật đã "đột phá thành công", "vỡ bình cảnh", "vượt ngưỡng 100%" hay "chính thức bước vào cảnh giới mới"! Việc đột phá chỉ xảy ra khi thanh Tu Vi đạt 100% và người chơi bấm nút **Đột Phá Cảnh Giới** (khi đó Engine sẽ gửi tin nhắn \`[ĐỘT PHÁ THÀNH CÔNG]\`).
-   - Nếu nhân vật đang luyện công hoặc Tu Vi sắp đầy, chỉ miêu tả là *tích lũy linh lực, chạm tới bình cảnh chuẩn bị đột phá*, và để \`stateChanges.realmUpdate = null\`.
-   - Chỉ điền \`stateChanges.realmUpdate\` khi có **kỳ ngộ truyền công đặc biệt** hoặc **bị phế/hút tu vị** làm thay đổi trực tiếp cảnh giới. Nếu công pháp luyện tới viên mãn rèn ra Thể Chất mới (hoặc ăn thiên tài địa bảo thức tỉnh thể chất), điền \`stateChanges.physiqueUpdate\`.
-9. QUY TẮC CỘNG ĐIỂM & TRANG BỊ RPG:
-   - \`potentialDelta\` (điểm tự do): Mặc định là 0! Tuyệt đối KHÔNG tự thưởng điểm tự do ở lượt thường. Điểm tự do chủ yếu đến từ Đột phá cảnh giới (Engine tự tính lv×tầng), hoặc chỉ cho \`potentialDelta\` khi nhân vật **ăn Thiên Tài Địa Bảo đặc biệt** khai mở tiềm năng toàn thân hoặc **sáng tạo công pháp xuất sắc (≥ 80/100 điểm)**.
-   - Công pháp tự sáng tạo: AI chấm điểm 0–100 dựa trên độ logic & sáng tạo so với nền tảng, nêu rõ điểm/xếp hạng và thưởng \`statDeltas\` (vào chỉ số chủ tu của công pháp + \`ngotinh\`) tương ứng với điểm số.
-   - Cộng trực tiếp \`statDeltas\` theo đúng nguồn gốc: Ngộ đạo thường -> \`+ngotinh\`; Ngộ đạo liên quan Công Pháp -> cộng vào **chỉ số mà công pháp đó chủ tu** (luyện thể -> \`cancot\`, tâm/phép -> \`tamtin\`, hồn/ngự thú/pháp bảo -> \`linhhon\`, diễn đạo -> \`ngotinh\`); Thăng hoa linh hồn -> \`+linhhon\`; Tăng trí tuệ/rèn tâm -> \`+tamtin\`; Ăn thiên tài địa bảo -> cộng chỉ số tương ứng trong \`statDeltas\` (hoặc \`potentialDelta\`).
-   - Trang bị RPG (\`newItems\`): Đồ mặc (Hộ Giáp, Vũ Khí, Pháp Bảo, Trang Sức) hãy gắn \`slot\` (\`armor\`/\`weapon\`/\`accessory\`), \`statBonuses\`, \`armorBonus\`, \`resistBonus\`, \`effects\` và \`grantedSkills\` (nếu trang bị kèm kỹ năng).
-10. ÁP LỰC CƯỜNG GIẢ CAO TẦNG & TỈ LỆ TỬ VONG CAO:
-   - Cường giả có Level cao hơn hoặc thuộc Tầng 1–5 sở hữu năng lực truy xét theo tầng (khác nhau ở **phạm vi** và **độ sâu hồi tố**):
-     * Tầng 1 (cao cấp / có Thần Thông đặc biệt): Đã có thể dùng Thần Thức, Truy Xét Nhân Quả sơ cấp hoặc Thời Gian Hồi Tố, **nhưng phạm vi hẹp và hồi tố nông** (chỉ soi lại khoảng thời gian ngắn tại chỗ).
-     * Tầng 2: Có **Thần Thức rộng lớn, Truy Xét Nhân Quả, Luân Hồi ấn ký và Thời Gian Hồi Tố sâu hơn** (phạm vi lớn, hồi tố xa hơn). Đặc biệt: **nếu cường giả Tầng 2 bị nhắm tới/ám toán/dò xét, họ có khả năng cảm ứng và truy vết ngược lại kẻ ra tay!**
-     * Tầng 3: Phạm vi tinh vực/giới vực, hồi tố cực sâu qua dòng thời gian dài, truy xét nhân quả xuyên không gian.
-     * Tầng 4–5: Toàn tri quy tắc, bẻ gãy hoặc viết lại nhân quả – thời gian.
-   - TĂNG TỈ LỆ CHẾT: Tuyệt đối không nương tay hay buff main vô lý! Khi người chơi thất bại (\`Thất Bại\`, \`Đại Thất Bại\`, \`Mất Tiên Cơ\`) lúc đối đầu, khiêu khích hoặc tìm cách qua mặt/ẩn nấp trước cường giả cấp cao hơn, hãy trừ \`hpDelta\` cực nặng (có thể rút HP về 0 cho chết ngay lập tức để kích hoạt Tam Sinh Thạch hoặc rơi xuống Địa Phủ).
-11. LỰA CHỌN (\`choices\`) PHẢI BÁM SÁT HOÀN CẢNH & TRẠNG THÁI THỰC TẾ:
-   - Tuyệt đối KHÔNG tự bịa ra các lựa chọn sử dụng thứ nhân vật KHÔNG có (ví dụ: đang tu chính đạo bình thường thì KHÔNG được tạo option "để lại ma khí giả", chưa có Thần Thức thì KHÔNG được tạo option "quét thần thức", không có độc/kiếm/phù thì KHÔNG được tạo option dùng chúng trừ khi đang cầm trong Túi đồ hoặc có Kỹ năng tương ứng).
-   - Mọi lựa chọn trong \`choices\` phải logic với: (a) hoàn cảnh hiện trường đang diễn ra, (b) cảnh giới & chỉ số hiện tại, (c) Kỹ năng / Công pháp / Thể chất / Vật phẩm thực tế đang sở hữu.
-   - \`statTag\` của mỗi choice chỉ dùng một trong các nhãn chuẩn: \`Căn cốt\`, \`Tâm trí\`, \`Linh hồn\`, \`Ngộ tính\`, \`Thiên phú\`, \`Khí vận\`.
-12. Luôn trả về đúng JSON Schema, tiếng Việt tự nhiên, giàu hình ảnh, độ dài \`narrative\` khoảng 180–320 chữ để đọc cực sướng trên điện thoại dọc.`;
+=== QUY TẮC ===
+1. Dưới Hóa Thần tuyệt đối không viết dùng Thần Thức. Lồng ghép tông môn/thế gia/di tích/âm mưu/truyền công. ~15% lượt khám phá kích hoạt mode "ngodao" đặt câu hỏi triết học/vũ trụ.
+2. Combat: đặt mode "combat", điền \`enemy\` ngắn gọn (HP tham chiếu: Luyện Khí 100-1k+, Trúc Cơ 1k-5k, Kim Đan 5k-10k, Nguyên Anh 10k-50k, Hóa Thần+ 50k+). Giữ nguyên \`enemy.maxHp\` và kế thừa \`enemy.hp\` từ lượt trước; chỉ đặt \`maxHpChanged=true\` khi có skill trừ/buff/giải Max HP, \`hpHealed=true\` khi hồi máu. \`hp<=0\` -> \`mode="normal"\`, \`enemy=null\`.
+3. Tuân thủ kết quả xúc xắc/DMG từ Engine. Khi thất bại trước cường giả cao hơn -> trừ \`hpDelta\` cực nặng (có thể chết ngay).
+4. CẤM ĐỘT PHÁ MỒM: Lượt thường không viết đã đột phá cảnh giới và để \`realmUpdate=null\` (trừ kỳ ngộ truyền công/bị phế).
+5. \`potentialDelta\` mặc định 0 (chỉ thưởng khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp ≥80/100đ). Trang bị gắn \`slot\` (\`armor|weapon|accessory\`), \`statBonuses\`, \`armorBonus\`, \`resistBonus\`, \`effects\`.
+6. \`choices\` (3-4 lựa chọn) PHẢI bám sát hoàn cảnh & vật phẩm/kỹ năng thực tế đang có; \`statTag\` chỉ dùng: \`Căn cốt\`, \`Tâm trí\`, \`Linh hồn\`, \`Ngộ tính\`, \`Thiên phú\`, \`Khí vận\`.
+7. \`narrative\` tiếng Việt giàu hình ảnh, 160–280 chữ.`;
 }
 
 const DIRECT_MODEL_CACHE = new Map();
@@ -560,35 +522,61 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
   }
 
   const recentLogs = state.logs
-    .slice(-4)
-    .map((l) => (l.type === "player" ? `[Người chơi]: ${l.text}` : `[Diễn biến]: ${l.text}`))
+    .slice(-3)
+    .map((l) => {
+      const txt = String(l.text || "").replace(/\n\[AI:[^\]]+\]$/, "").trim();
+      const shortTxt = txt.length > 280 ? `${txt.slice(0, 280)}...` : txt;
+      return l.type === "player" ? `[Người chơi]: ${shortTxt}` : `[Diễn biến]: ${shortTxt}`;
+    })
     .join("\n");
 
-  const fullUserContent = `Tóm tắt cốt truyện đã qua:\n${state.storySummary}\n\nDiễn biến gần nhất:\n${recentLogs || "(Mới bắt đầu)"}\n\nHành động / Sự kiện lượt này:\n${userPrompt}`;
+  const summaryTail = String(state.storySummary || "").slice(-900);
+  const fullUserContent = `Tóm tắt cốt truyện:\n${summaryTail}\n\nGần nhất:\n${recentLogs || "(Mới bắt đầu)"}\n\nLượt này:\n${userPrompt}`;
 
   let parsed;
   let modelUsed = "";
 
   if (provider === "groq" || provider === "openrouter") {
     const isGroq = provider === "groq";
-    const defaultModel = isGroq ? "llama-3.3-70b-versatile" : "meta-llama/llama-3.3-70b-instruct:free";
-    modelUsed = (settings.customModel || "").trim() || defaultModel;
+    const groqFallbacks = [
+      "meta-llama/llama-4-scout-17b-16e-instruct",
+      "llama-3.3-70b-versatile",
+      "qwen/qwen3-32b",
+      "llama-3.1-8b-instant",
+    ];
+    const customM = (settings.customModel || "").trim();
+    const candidates = isGroq
+      ? customM
+        ? [customM, ...groqFallbacks.filter((m) => m !== customM)]
+        : groqFallbacks
+      : [customM || "meta-llama/llama-3.3-70b-instruct:free"];
     const url = isGroq
       ? "https://api.groq.com/openai/v1/chat/completions"
       : "https://openrouter.ai/api/v1/chat/completions";
     const extraHeaders = isGroq
       ? {}
       : { "HTTP-Referer": location.origin, "X-Title": "Dao Nguyen Chronicles" };
-    parsed = await callOpenAICompatible({
-      url,
-      apiKey,
-      model: modelUsed,
-      systemPrompt: `${buildSystemPrompt(state)}\n${OPENAI_JSON_FORMAT_HINT}`,
-      userContent: fullUserContent,
-      temperature: 0.85,
-      extraHeaders,
-      providerName: isGroq ? "Groq" : "OpenRouter",
-    });
+    let lastErr = null;
+    for (const cand of candidates) {
+      try {
+        parsed = await callOpenAICompatible({
+          url,
+          apiKey,
+          model: cand,
+          systemPrompt: `${buildSystemPrompt(state)}\n${OPENAI_JSON_FORMAT_HINT}`,
+          userContent: fullUserContent,
+          temperature: 0.85,
+          extraHeaders,
+          providerName: isGroq ? "Groq" : "OpenRouter",
+        });
+        modelUsed = cand;
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (!/(429|404|400)/.test(err.message)) throw err;
+      }
+    }
+    if (!parsed) throw lastErr || new Error("Không gọi được model.");
   } else {
     const model = pickModel(settings, state, isMajorEvent);
     const payload = {
