@@ -35,10 +35,13 @@ import {
   toggleEquipItem,
   syncPhysiqueTierAbilities,
   syncTamSinhThachDaily,
+  syncRealmVitals,
+  getSkillStageDetails,
+  applySkillLevelUpRewards,
   pushSnapshot,
   exportNovelMarkdown,
 } from "./engine.js";
-import { callGeminiGM, compactStoryMemory, listGeminiModels } from "./ai.js";
+import { callGeminiGM, compactStoryMemory, listProviderModels, getActiveProvider, getActiveApiKey } from "./ai.js";
 
 let settings = loadSettings();
 let state = null;
@@ -51,6 +54,7 @@ function init() {
   const saves = listSaves();
   if (saves.length > 0) {
     state = saves[0].state;
+    if (syncRealmVitals(state)) saveGameState(state);
     renderAll();
   }
 }
@@ -245,8 +249,9 @@ function renderTabs() {
       <button id="btn-open-catalog" class="mini-btn">📚 Thư Viện (100 Thể Chất • 600 Pháp)</button>
     </div>
     ${p.skills
-      .map(
-        (sk, idx) => `
+      .map((sk, idx) => {
+        const stage = getSkillStageDetails(sk);
+        return `
       <div class="list-card">
         <div class="list-card-head">
           <span>${sk.name} <span style="color:var(--accent)">[Bậc ${sk.tier} Lv.${sk.level}]</span> ${sk.isDao ? `<span style="color:#ffd166;font-size:10px;border:1px solid #ffd166;padding:0 4px;border-radius:4px;">⚡ ĐẠO</span>` : ""} ${sk.fromEquipment ? `<span style="color:#90dbf4;font-size:10px;border:1px solid #90dbf4;padding:0 4px;border-radius:4px;">🎒 ${escapeHtml(sk.fromEquipment)}</span>` : ""}</span>
@@ -263,8 +268,14 @@ function renderTabs() {
           ${sk.category} • ${sk.grade} • Lĩnh ngộ: ${sk.mastery}% • Đạo Ý Cảnh: <strong>${sk.daoIntent}</strong>
         </div>
         <div style="margin-top:3px;">${sk.effect}</div>
-      </div>`
-      )
+        <div style="margin-top:3px;font-size:10.5px;color:var(--accent);">📈 Cộng hưởng tầng: ${stage.summaryText}</div>
+        ${
+          stage.specials.length
+            ? `<div style="margin-top:3px;font-size:10.5px;color:#ffd166;">${stage.specials.map((sp) => `✨ ${escapeHtml(sp)}`).join("<br>")}</div>`
+            : ""
+        }
+      </div>`;
+      })
       .join("")}
   `;
 
@@ -512,9 +523,9 @@ function renderActionArea() {
 }
 
 async function handlePlayerAction(text, kind = "text", statTag = "") {
-  if (!settings.apiKey) {
+  if (!getActiveApiKey(settings)) {
     openSettingsModal();
-    alert("Vui lòng nhập Gemini API Key (miễn phí từ Google AI Studio) để AI dẫn truyện.");
+    alert("Vui lòng nhập API Key (Gemini, Groq hoặc OpenRouter) để AI dẫn truyện.");
     return;
   }
 
@@ -523,11 +534,15 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
 
   let promptDetail = "";
   let combatOutcome = null;
+  let combatResult = null;
 
   if (state.mode === "combat") {
     const res = resolveCombatCheck(state, text);
-    combatOutcome = res.outcome;
-    promptDetail = `[CHẾ ĐỘ CHIẾN ĐẤU] Người chơi nhập: "${text}".\nKết quả thẩm định Engine: ${res.outcome} (${res.reason}, d20=${res.roll.d20}, tổng=${res.roll.total}).\nHãy viết diễn biến chiến đấu, cập nhật HP/MP người chơi và nếu địch chưa chết hãy cập nhật HP địch trong \`enemy\` (hoặc chuyển mode="normal" nếu địch bị hạ/rút lui).`;
+    combatResult = res;
+    combatOutcome = `${res.outcome} (Gây ${res.playerDmg} DMG • Nhận ${res.enemyDmg} DMG)`;
+    const curEnemyHp = state.enemy ? Number(state.enemy.hp) || 0 : 0;
+    const expectedEnemyHp = Math.max(0, curEnemyHp - res.playerDmg);
+    promptDetail = `[CHẾ ĐỘ CHIẾN ĐẤU] Người chơi nhập: "${text}".\nKết quả thẩm định Engine: ${res.outcome} (${res.reason}, d20=${res.roll.d20}, tổng=${res.roll.total}).\nSát thương Engine tính toán: Người chơi gây **${res.playerDmg} DMG** lên địch${state.enemy ? ` (HP địch còn khoảng ${expectedEnemyHp}/${state.enemy.maxHp})` : ""}; Địch phản đòn gây **${res.enemyDmg} DMG** lên người chơi (đã trừ Giáp/Kháng).\nHãy viết diễn biến chiến đấu khớp với lượng sát thương này, đặt \`stateChanges.hpDelta = ${-res.enemyDmg}\` và cập nhật \`enemy.hp = ${expectedEnemyHp}\` (nếu địch chết đặt \`mode="normal"\`, \`enemy=null\`).`;
   } else if (state.mode === "ngodao") {
     const roll = rollCheck(state.player.stats.ngotinh + state.player.stats.tamtin, 14);
     promptDetail = `[TRẢ LỜI NGỘ ĐẠO] Câu hỏi: "${state.ngodaoQuestion}".\nCâu trả lời của người chơi: "${text}".\nTung xúc xắc Ngộ Tính: ${roll.tier}.\nHãy chấm độ sâu sắc câu trả lời (nếu hay hãy thưởng Tu vi lớn, Ngộ tính hoặc Thần thông/Đạo Ý Cảnh mới!) rồi chuyển về mode="normal".`;
@@ -561,7 +576,7 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
       userPrompt: promptDetail,
       isMajorEvent: state.mode === "ngodao",
     });
-    applyAiResult(result, combatOutcome, modelUsed);
+    applyAiResult(result, combatOutcome, modelUsed, combatResult);
 
     if (state.turn > 0 && (state.turn % 6 === 0 || (state.storySummary || "").length > 1600)) {
       compactStoryMemory({ settings, state })
@@ -588,7 +603,7 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
   }
 }
 
-function applyAiResult(res, combatOutcome = null, modelUsed = "") {
+function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult = null) {
   const prevEnemy = state.mode === "combat" && state.enemy ? state.enemy : null;
   state.turn += 1;
   state.mode = res.mode || "normal";
@@ -620,7 +635,11 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "") {
       }
       const maxAllowedHp = allowHeal ? lockedMax : Math.min(prevHp, lockedMax);
       nextEnemy.maxHp = lockedMax;
-      nextEnemy.hp = Math.max(0, Math.min(maxAllowedHp, nextHp));
+      let clampedHp = Math.max(0, Math.min(maxAllowedHp, nextHp));
+      if (combatResult && combatResult.playerDmg > 0 && !allowHeal && clampedHp >= prevHp) {
+        clampedHp = Math.max(0, prevHp - combatResult.playerDmg);
+      }
+      nextEnemy.hp = clampedHp;
     } else {
       nextEnemy.maxHp = rawMax;
       nextEnemy.hp = Math.max(0, Math.min(rawMax, rawHp));
@@ -719,6 +738,7 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "") {
         applyLevelUpRewards(state);
       }
     }
+    syncRealmVitals(state, false);
   }
   if (sc.timelineUpdate) state.timeline = sc.timelineUpdate;
   if (sc.newCausalAnchor) {
@@ -827,6 +847,7 @@ function applyLevelUpRewards(targetState) {
   }
 
   const tierSync = syncPhysiqueTierAbilities(p);
+  syncRealmVitals(targetState, true);
   return { lv, bonusPoints, phyGainLogs, tierSync };
 }
 
@@ -933,9 +954,16 @@ async function handleEvolveSkill(idx) {
     sk.mastery = 0;
     sk.grade = SKILL_TIERS[sk.tier - 1].grade;
   }
+  const reward = applySkillLevelUpRewards(state.player, sk);
+  syncRealmVitals(state, false);
+  state.logs.push({
+    type: "system",
+    title: `Tăng Tầng Công Pháp: ${sk.name} (Bậc ${sk.tier} Lv.${sk.level})`,
+    text: `Nhận +${reward.pts} Điểm Tiềm Năng, +${reward.hpGain} HP tối đa, +${reward.mpGain} MP tối đa, +${reward.statGain} ${reward.statKey}. ${reward.details.summaryText}.${reward.details.specials.length ? ` Hiệu ứng đặc biệt: ${reward.details.specials[reward.details.specials.length - 1]}` : ""}`,
+  });
   saveGameState(state);
   await handlePlayerAction(
-    `[DIỄN HÓA KỸ NĂNG] Kỹ năng [${sk.name}] đã tiến hóa lên Bậc ${sk.tier} Lv.${sk.level} (${sk.grade})! Hãy đặt lại tên/hiệu ứng hoặc Đạo Ý Cảnh mới xứng tầm nếu sang Bậc mới.`,
+    `[DIỄN HÓA KỸ NĂNG] Kỹ năng [${sk.name}] đã tiến hóa lên Bậc ${sk.tier} Lv.${sk.level} (${sk.grade})! (${reward.details.summaryText}). Hãy đặt lại tên/hiệu ứng hoặc Đạo Ý Cảnh mới xứng tầm nếu sang Bậc mới.`,
     "system"
   );
 }
@@ -1008,11 +1036,12 @@ function openNewGameModal() {
       physiqueId: $("ng-physique").value,
       profession: $("ng-prof").value,
     });
+    syncRealmVitals(state, true);
     modal.classList.add("hidden");
     saveGameState(state);
     renderAll();
 
-    if (settings.apiKey) {
+    if (getActiveApiKey(settings)) {
       await handlePlayerAction(
         "Mở màn chương 1: Giới thiệu bối cảnh nhánh thế giới song song, thân phận nhân vật, gieo manh mối đầu tiên về thế lực xung quanh và đưa ra 3-4 lựa chọn khởi đầu.",
         "system"
@@ -1285,25 +1314,40 @@ function openSettingsModal() {
   const modal = $("modal-settings");
   modal.classList.remove("hidden");
   const saves = listSaves();
+  const curProvider = getActiveProvider(settings);
+  const keyMeta = {
+    gemini: { label: "Gemini API Key (Lấy tại aistudio.google.com)", placeholder: "AIza...", value: settings.apiKey || "" },
+    groq: { label: "Groq API Key (Lấy miễn phí tại console.groq.com)", placeholder: "gsk_...", value: settings.groqApiKey || "" },
+    openrouter: { label: "OpenRouter API Key (Lấy tại openrouter.ai)", placeholder: "sk-or-v1-...", value: settings.openrouterApiKey || "" },
+  };
+  const meta = keyMeta[curProvider] || keyMeta.gemini;
 
   $("settings-body").innerHTML = `
     <div class="field-group">
-      <label>Gemini API Key (Lấy miễn phí tại aistudio.google.com)</label>
-      <input id="set-key" type="password" value="${escapeHtml(settings.apiKey || "")}" placeholder="AIza..." />
+      <label>Nhà Cung Cấp AI (Provider)</label>
+      <select id="set-provider">
+        <option value="gemini" ${curProvider === "gemini" ? "selected" : ""}>Google Gemini (aistudio.google.com)</option>
+        <option value="groq" ${curProvider === "groq" ? "selected" : ""}>Groq (Miễn phí nhanh, quota cao)</option>
+        <option value="openrouter" ${curProvider === "openrouter" ? "selected" : ""}>OpenRouter (Nhiều model :free)</option>
+      </select>
     </div>
     <div class="field-group">
-      <label>Chế Độ Model AI</label>
+      <label id="lbl-set-key">${meta.label}</label>
+      <input id="set-key" type="password" value="${escapeHtml(meta.value)}" placeholder="${meta.placeholder}" />
+    </div>
+    <div class="field-group" id="grp-gemini-mode" style="${curProvider === "gemini" ? "" : "display:none;"}">
+      <label>Chế Độ Model Gemini</label>
       <select id="set-model">
-        <option value="auto" ${settings.modelMode === "auto" || !settings.modelMode ? "selected" : ""}>Tự Động (Flash thường / Pro cho Ngộ Đạo & Tầng 3–5)</option>
+        <option value="auto" ${settings.modelMode === "auto" || !settings.modelMode ? "selected" : ""}>Tự Động (Flash)</option>
         <option value="flash" ${settings.modelMode === "flash" ? "selected" : ""}>Luôn dùng Flash (Nhanh nhất)</option>
         <option value="pro" ${settings.modelMode === "pro" ? "selected" : ""}>Luôn dùng Pro (Cân não sâu)</option>
       </select>
     </div>
     <div class="field-group">
-      <label>Hoặc Chọn Model Cụ Thể Từ API Key (Tùy chọn)</label>
+      <label>Model Cụ Thể (Hoặc để mặc định của Provider)</label>
       <div style="display:flex;gap:6px;">
         <select id="set-custom-model" style="flex:1;">
-          <option value="">-- Theo chế độ tự động ở trên --</option>
+          <option value="">-- Mặc định (Gemini: Auto / Groq: llama-3.3-70b-versatile) --</option>
           ${settings.customModel ? `<option value="${escapeHtml(settings.customModel)}" selected>${escapeHtml(settings.customModel)}</option>` : ""}
         </select>
         <button id="btn-fetch-models" class="btn-secondary" type="button">🔍 Quét</button>
@@ -1336,14 +1380,33 @@ function openSettingsModal() {
     }
   `;
 
+  const draftKeys = {
+    gemini: settings.apiKey || "",
+    groq: settings.groqApiKey || "",
+    openrouter: settings.openrouterApiKey || "",
+  };
+  let activeDraftProvider = curProvider;
+
+  $("set-provider").addEventListener("change", () => {
+    draftKeys[activeDraftProvider] = $("set-key").value.trim();
+    activeDraftProvider = $("set-provider").value;
+    const m = keyMeta[activeDraftProvider] || keyMeta.gemini;
+    $("lbl-set-key").textContent = m.label;
+    $("set-key").placeholder = m.placeholder;
+    $("set-key").value = draftKeys[activeDraftProvider] || "";
+    $("grp-gemini-mode").style.display = activeDraftProvider === "gemini" ? "" : "none";
+    $("set-custom-model").innerHTML = `<option value="">-- Mặc định (${activeDraftProvider === "groq" ? "llama-3.3-70b-versatile" : activeDraftProvider === "openrouter" ? "meta-llama/llama-3.3-70b-instruct:free" : "Auto"}) --</option>`;
+  });
+
   $("btn-fetch-models").addEventListener("click", async () => {
+    const prov = $("set-provider").value;
     const key = $("set-key").value.trim();
-    if (!key) return alert("Hãy dán Gemini API Key trước.");
+    if (!key && prov !== "openrouter") return alert("Hãy dán API Key trước.");
     $("btn-fetch-models").textContent = "⏳";
     try {
-      const models = await listGeminiModels(key);
+      const models = await listProviderModels(prov, key);
       const sel = $("set-custom-model");
-      sel.innerHTML = `<option value="">-- Theo chế độ tự động ở trên --</option>` +
+      sel.innerHTML = `<option value="">-- Mặc định --</option>` +
         models.map((m) => `<option value="${escapeHtml(m)}" ${settings.customModel === m ? "selected" : ""}>${escapeHtml(m)}</option>`).join("");
     } catch (e) {
       alert(e.message);
@@ -1353,7 +1416,12 @@ function openSettingsModal() {
   });
 
   $("btn-save-settings").addEventListener("click", () => {
-    settings.apiKey = $("set-key").value.trim();
+    const prov = $("set-provider").value;
+    draftKeys[prov] = $("set-key").value.trim();
+    settings.provider = prov;
+    settings.apiKey = draftKeys.gemini;
+    settings.groqApiKey = draftKeys.groq;
+    settings.openrouterApiKey = draftKeys.openrouter;
     settings.modelMode = $("set-model").value;
     settings.customModel = $("set-custom-model").value;
     saveSettings(settings);
@@ -1370,6 +1438,7 @@ function openSettingsModal() {
       const found = listSaves().find((s) => s.id === b.dataset.id);
       if (found) {
         state = found.state;
+        if (syncRealmVitals(state)) saveGameState(state);
         modal.classList.add("hidden");
         renderAll();
       }

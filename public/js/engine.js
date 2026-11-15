@@ -169,11 +169,34 @@ export function computeDerivedStats(player, lv = null) {
     if (k in s) s[k] += v;
   }
 
+  const skillCultivationBonus = (player.skills || []).reduce((sum, sk) => {
+    const lv = Math.max(1, Number(sk.level) || 1);
+    const t = Math.max(1, Number(sk.tier) || 1);
+    const isCult = /công pháp|tu luyện|thể chất|đại đạo/i.test(`${sk.category} ${sk.name}`);
+    return sum + (isCult ? lv * 4 * t : lv * 1 * t);
+  }, 0);
+  const skillBreakthroughBonus = (player.skills || []).reduce(
+    (sum, sk) => sum + ((Number(sk.level) || 1) >= 6 ? 3 : 0) + ((Number(sk.level) || 1) >= 9 ? 4 : 0),
+    0
+  );
+  const skillArmorBonus = (player.skills || []).reduce((sum, sk) => {
+    const lv = Math.max(1, Number(sk.level) || 1);
+    const t = Math.max(1, Number(sk.tier) || 1);
+    const isDef = /luyện thể|hộ thể|kim thân|bất diệt|giáp|thể xác/i.test(`${sk.category} ${sk.name} ${sk.effect}`);
+    return sum + (isDef ? lv * 3 * t : 0);
+  }, 0);
+
   const effectiveTalent = Math.round(s.thienphu + s.cancot * 0.45);
   const effectiveComprehension = Math.round(s.ngotinh + s.tamtin * 0.3);
   const effectiveLuck = Math.round(s.khivan + s.congduc * 0.25 - s.nghiepluc * 0.3);
   const soulDefense = Math.round(s.linhhon * 1.5);
-  const baseArmor = Math.round(s.cancot * 1.5) + (player.defense?.armor || 0) + equipArmor + (physique.id === "thanh_the" ? 10 : 0) + (phyBonus.armorBonus || 0);
+  const baseArmor =
+    Math.round(s.cancot * 1.5) +
+    (player.defense?.armor || 0) +
+    equipArmor +
+    skillArmorBonus +
+    (physique.id === "thanh_the" ? 10 : 0) +
+    (phyBonus.armorBonus || 0);
   const res = player.defense?.resistances || {};
   const effectiveResist = {
     physical: Math.min(85, Math.max(res.physical || 0, equipResists.physical) + Math.floor(s.cancot * 0.6)),
@@ -184,8 +207,10 @@ export function computeDerivedStats(player, lv = null) {
   };
   const artifactSync = Math.min(100, 20 + s.linhhon * 4 + (physique.id === "kiem_tam" ? 20 : 0));
   const conspiracySense = Math.round(s.tamtin * 1.3 + s.ngotinh * 0.5 + (physique.id === "linh_tam" ? 8 : 0));
-  const breakthroughBonus = Math.round(s.linhhon * 1.2 + effectiveLuck * 0.8);
-  const cultivationSpeed = Math.round(100 + effectiveTalent * 2.5 + effectiveComprehension * 2 + (physique.speedBonus || 0));
+  const breakthroughBonus = Math.round(s.linhhon * 1.2 + effectiveLuck * 0.8 + skillBreakthroughBonus);
+  const cultivationSpeed = Math.round(
+    100 + effectiveTalent * 2.5 + effectiveComprehension * 2 + (physique.speedBonus || 0) + skillCultivationBonus
+  );
   const hasSpecialSenseItem = (player.inventory || []).some((i) =>
     /(thần thức|nguyên thần|ma pháp chi tâm|linh nhãn|tinh thần hải)/i.test(`${i.name} ${i.desc} ${i.effects || ""}`)
   );
@@ -385,11 +410,23 @@ export function resolveCombatCheck(state, userText) {
   const text = (userText || "").trim();
   const lower = text.toLowerCase();
 
+  const playerMaxHp = Math.max(100, Number(state.player.maxHp) || 150);
+  const enemyMaxHp = Math.max(100, Number(state.enemy?.maxHp) || playerMaxHp);
+  const baseStat = Math.max(state.player.stats.cancot, state.player.stats.tamtin, state.player.stats.linhhon);
+  const matchedSkill = state.player.skills.find((sk) => lower.includes(sk.name.toLowerCase().slice(0, 6)));
+  const skillPowerMult = matchedSkill ? 1 + getSkillStageDetails(matchedSkill).powerPct / 100 : 1;
+  const weaponMult = state.player.equipment?.weapon ? 1.15 : 1;
+  const rawPlayerAtk = Math.round((playerMaxHp * 0.14 + baseStat * 4) * skillPowerMult * weaponMult);
+  const armorMitigation = Math.max(0.35, 1 - Math.min(0.65, (derived.baseArmor * 0.4 + (derived.effectiveResist?.physical || 0)) / 140));
+  const rawEnemyAtk = Math.round(enemyMaxHp * 0.14 * armorMitigation);
+
   if (text.length < 4) {
     return {
       outcome: "Mất Tiên Cơ - Bị Đả Thương",
       reason: "Hành động quá sơ sài, không đủ ứng biến trước sát chiêu của địch.",
       roll: { d20: 1, total: 1 },
+      playerDmg: 0,
+      enemyDmg: Math.max(10, Math.round(rawEnemyAtk * 1.25)),
     };
   }
 
@@ -400,13 +437,13 @@ export function resolveCombatCheck(state, userText) {
       outcome: "Mất Tiên Cơ - Bị Đả Thương",
       reason: "Vọng tưởng vượt cấp, sơ hở toàn thân khiến địch nhân chớp thời cơ phản công trọng thương!",
       roll: { d20: 2, total: 2 },
+      playerDmg: 0,
+      enemyDmg: Math.max(15, Math.round(rawEnemyAtk * 1.4)),
     };
   }
 
   // Kiểm tra có nhắc đến kỹ năng đã học hoặc chiến thuật hợp lý không
-  const matchedSkill = state.player.skills.find((sk) => lower.includes(sk.name.toLowerCase().slice(0, 6)));
   const bonus = matchedSkill ? matchedSkill.tier * 3 + Math.floor(matchedSkill.level / 2) : 0;
-  const baseStat = Math.max(state.player.stats.cancot, state.player.stats.tamtin, state.player.stats.linhhon);
   const d20 = Math.floor(Math.random() * 20) + 1;
   const luckMod = Math.floor(derived.effectiveLuck / 6);
   const score = d20 + Math.floor(baseStat / 2) + bonus + luckMod;
@@ -416,6 +453,8 @@ export function resolveCombatCheck(state, userText) {
       outcome: "Mất Tiên Cơ - Bị Đả Thương",
       reason: "Phán đoán sai ý đồ địch hoặc vận khí bất ổn, bị đả thương và mất nhịp độ.",
       roll: { d20, total: score },
+      playerDmg: Math.max(5, Math.round(rawPlayerAtk * 0.35)),
+      enemyDmg: Math.max(10, Math.round(rawEnemyAtk * 1.25)),
     };
   }
   if (d20 >= 18 || score >= 24) {
@@ -425,12 +464,16 @@ export function resolveCombatCheck(state, userText) {
         ? `Vận dụng chuẩn xác [${matchedSkill.name}] đánh trúng tử huyệt của địch!`
         : "Chiến thuật sắc bén, đọc thấu sơ hở của địch để tung đòn chí mạng!",
       roll: { d20, total: score },
+      playerDmg: Math.max(15, Math.round(rawPlayerAtk * 1.45)),
+      enemyDmg: Math.max(0, Math.round(rawEnemyAtk * 0.25)),
     };
   }
   return {
     outcome: "Giao Tranh Cân Bằng",
     reason: "Ứng biến hợp lý, hai bên giằng co quyết liệt.",
     roll: { d20, total: score },
+    playerDmg: Math.max(10, rawPlayerAtk),
+    enemyDmg: Math.max(5, Math.round(rawEnemyAtk * 0.75)),
   };
 }
 
@@ -701,4 +744,178 @@ export function exportNovelMarkdown(state) {
     }
   }
   return lines.join("\n");
+}
+
+export function computeRealmVitalsBaseline(state) {
+  const p = state?.player;
+  if (!p) return { maxHp: 180, maxMp: 120 };
+  const tier = Math.max(1, Number(p.tier) || 1);
+  const idx = Math.max(0, Number(p.realmIndex) || 0);
+  const realmName = String(p.realm || "").toLowerCase();
+  const world = WORLD_PRESETS[state.worldId];
+  const realms = world?.realmsByTier?.[tier] || [];
+  const totalInTier = Math.max(1, realms.length - 1);
+  const cancot = Math.max(1, p.stats?.cancot || 5);
+  const tamtin = Math.max(1, p.stats?.tamtin || 5);
+  const linhhon = Math.max(1, p.stats?.linhhon || 5);
+
+  let baseHp = 150;
+  let baseMp = 100;
+
+  if (state.isAfterlife) {
+    const aIdx = Math.max(0, Number(state.afterlifeRealmIndex) || 0);
+    baseHp = Math.round(800 * Math.pow(3.2, aIdx) + cancot * 40);
+    baseMp = Math.round(700 * Math.pow(3.2, aIdx) + (tamtin + linhhon) * 35);
+  } else if (tier === 1) {
+    if (/luyện khí/i.test(realmName)) {
+      const m = realmName.match(/(\d+)/);
+      const lkStage = m ? Math.max(1, Math.min(9, Number(m[1]))) : Math.min(9, idx + 1);
+      baseHp = 110 + (lkStage - 1) * 95 + cancot * 16;
+      baseMp = 80 + (lkStage - 1) * 70 + tamtin * 12 + linhhon * 8;
+    } else if (/trúc cơ/i.test(realmName)) {
+      const sub = /đỉnh|viên mãn|hậu/i.test(realmName) ? 2 : /trung/i.test(realmName) ? 1 : 0;
+      baseHp = 1400 + sub * 1350 + cancot * 45;
+      baseMp = 1000 + sub * 950 + tamtin * 35 + linhhon * 25;
+    } else if (/kim đan/i.test(realmName)) {
+      const sub = /đỉnh|viên mãn|hậu/i.test(realmName) ? 2 : /trung/i.test(realmName) ? 1 : 0;
+      baseHp = 6000 + sub * 1500 + cancot * 100;
+      baseMp = 4500 + sub * 1200 + tamtin * 80 + linhhon * 60;
+    } else if (/nguyên anh/i.test(realmName)) {
+      const sub = /đỉnh|viên mãn|hậu/i.test(realmName) ? 2 : /trung/i.test(realmName) ? 1 : 0;
+      baseHp = 16000 + sub * 12000 + cancot * 280;
+      baseMp = 12000 + sub * 9000 + tamtin * 220 + linhhon * 160;
+    } else if (/hóa thần/i.test(realmName)) {
+      baseHp = 60000 + cancot * 750;
+      baseMp = 48000 + tamtin * 600 + linhhon * 450;
+    } else if (/đại thừa|độ kiếp/i.test(realmName)) {
+      baseHp = 180000 + cancot * 1800;
+      baseMp = 140000 + tamtin * 1400 + linhhon * 1000;
+    } else {
+      const prog = idx / totalInTier;
+      baseHp = Math.round(140 * Math.pow(1200, prog) + cancot * 20 * (1 + prog * 15));
+      baseMp = Math.round(100 * Math.pow(1200, prog) + (tamtin + linhhon) * 14 * (1 + prog * 15));
+    }
+  } else if (tier === 2) {
+    baseHp = Math.round(400000 * Math.pow(2.2, idx) + cancot * 4000);
+    baseMp = Math.round(320000 * Math.pow(2.2, idx) + (tamtin + linhhon) * 3000);
+  } else if (tier === 3) {
+    baseHp = Math.round(5000000 * Math.pow(2.3, idx) + cancot * 30000);
+    baseMp = Math.round(4000000 * Math.pow(2.3, idx) + (tamtin + linhhon) * 22000);
+  } else if (tier === 4) {
+    baseHp = Math.round(50000000 * Math.pow(2.4, idx) + cancot * 200000);
+    baseMp = Math.round(40000000 * Math.pow(2.4, idx) + (tamtin + linhhon) * 150000);
+  } else {
+    baseHp = Math.round(500000000 * Math.pow(3, idx) + cancot * 1500000);
+    baseMp = Math.round(400000000 * Math.pow(3, idx) + (tamtin + linhhon) * 1200000);
+  }
+
+  const phyInfo = getPhysiqueInfo(p).current;
+  const isSpecialPhysique = phyInfo && phyInfo.id !== "phamthe";
+  const phyHpMult = 1 + (isSpecialPhysique ? 0.18 * tier : 0) + (phyInfo?.group === "Thể Xác" ? 0.15 : 0);
+  const phyMpMult = 1 + (isSpecialPhysique ? 0.15 * tier : 0) + (phyInfo?.group === "Linh Hồn" || phyInfo?.group === "Tâm Linh" ? 0.15 : 0);
+
+  const skillHpMult =
+    1 +
+    (p.skills || []).reduce((acc, sk) => {
+      const lv = Math.max(1, Number(sk.level) || 1);
+      const t = Math.max(1, Number(sk.tier) || 1);
+      const isBodyOrCult = /công pháp|tu luyện|luyện thể|thể chất/i.test(`${sk.category} ${sk.name}`);
+      return acc + (isBodyOrCult ? lv * 0.03 * t : lv * 0.01 * t);
+    }, 0);
+  const skillMpMult =
+    1 +
+    (p.skills || []).reduce((acc, sk) => {
+      const lv = Math.max(1, Number(sk.level) || 1);
+      const t = Math.max(1, Number(sk.tier) || 1);
+      return acc + lv * 0.025 * t;
+    }, 0);
+
+  return {
+    maxHp: Math.round(baseHp * phyHpMult * skillHpMult),
+    maxMp: Math.round(baseMp * phyMpMult * skillMpMult),
+  };
+}
+
+export function syncRealmVitals(state, healToFull = false) {
+  const p = state?.player;
+  if (!p) return false;
+  const baseline = computeRealmVitalsBaseline(state);
+  let changed = false;
+  if ((p.maxHp || 0) < baseline.maxHp) {
+    const ratio = p.maxHp > 0 ? p.hp / p.maxHp : 1;
+    p.maxHp = baseline.maxHp;
+    p.hp = healToFull ? p.maxHp : Math.max(1, Math.min(p.maxHp, Math.round(p.maxHp * ratio)));
+    changed = true;
+  }
+  if ((p.maxMp || 0) < baseline.maxMp) {
+    const ratio = p.maxMp > 0 ? p.mp / p.maxMp : 1;
+    p.maxMp = baseline.maxMp;
+    p.mp = healToFull ? p.maxMp : Math.max(0, Math.min(p.maxMp, Math.round(p.maxMp * ratio)));
+    changed = true;
+  }
+  return changed;
+}
+
+export function getSkillStageDetails(sk) {
+  const lv = Math.max(1, Number(sk?.level) || 1);
+  const t = Math.max(1, Number(sk?.tier) || 1);
+  const isCult = /công pháp|tu luyện|luyện thể|thể chất|đại đạo/i.test(`${sk?.category} ${sk?.name}`);
+  const speedPct = isCult ? lv * 4 * t : lv * 1 * t;
+  const powerPct = lv * 12 * t;
+  const specials = Array.isArray(sk?.specialEffects) ? [...sk.specialEffects] : [];
+  if (lv >= 3 && !specials.some((x) => x.startsWith("[Tầng 3"))) {
+    specials.push(
+      isCult
+        ? "[Tầng 3 • Tiểu Thành] Tinh luyện linh khí, -15% tiêu hao MP & +10% tốc độ hồi phục."
+        : "[Tầng 3 • Tiểu Thành] Chiêu thức ngưng tụ chân khí, +15% tỷ lệ xuyên giáp."
+    );
+  }
+  if (lv >= 6 && !specials.some((x) => x.startsWith("[Tầng 6"))) {
+    specials.push(
+      isCult
+        ? "[Tầng 6 • Đại Thành] Kinh mạch khuếch trương, +3% tỷ lệ Đột Phá & tăng mạnh giới hạn HP/MP."
+        : "[Tầng 6 • Đại Thành] Kèm hiệu ứng áp chế/chấn thương, +3% tỷ lệ Đột Phá."
+    );
+  }
+  if (lv >= 9 && !specials.some((x) => x.startsWith("[Tầng 9"))) {
+    specials.push(
+      isCult
+        ? "[Tầng 9 • Viên Mãn] Hộ thể linh quang tự vận chuyển, hồi 5% HP/MP mỗi lượt."
+        : "[Tầng 9 • Viên Mãn] Tung chiêu dẫn động thiên địa linh khí, +25% uy lực bạo kích."
+    );
+  }
+  if (lv >= 10 && !specials.some((x) => x.startsWith("[Tầng 10"))) {
+    specials.push("[Tầng 10 • Đỉnh Phong] Đã đạt cực hạn tầng, sẵn sàng Diễn Hóa lên Bậc cao hơn!");
+  }
+  return {
+    speedPct,
+    powerPct,
+    specials,
+    summaryText: `Uy lực +${powerPct}%${speedPct > 0 ? ` • Tốc độ tu luyện +${speedPct}%` : ""}`,
+  };
+}
+
+export function applySkillLevelUpRewards(player, sk) {
+  const lv = Math.max(1, Number(sk?.level) || 1);
+  const t = Math.max(1, Number(sk?.tier) || 1);
+  const isCult = /công pháp|tu luyện|luyện thể|thể chất|đại đạo/i.test(`${sk?.category} ${sk?.name}`);
+  const pts = t * 2;
+  const hpGain = Math.round((isCult ? 65 : 30) * t * lv);
+  const mpGain = Math.round((isCult ? 45 : 35) * t * lv);
+
+  player.potentialPoints = (player.potentialPoints || 0) + pts;
+  player.maxHp = (player.maxHp || 100) + hpGain;
+  player.hp = Math.min(player.maxHp, (player.hp || 0) + hpGain);
+  player.maxMp = (player.maxMp || 80) + mpGain;
+  player.mp = Math.min(player.maxMp, (player.mp || 0) + mpGain);
+
+  const statKey = isCult ? "cancot" : "linhhon";
+  if (player.stats && statKey in player.stats) {
+    player.stats[statKey] += t;
+  }
+
+  const details = getSkillStageDetails(sk);
+  sk.specialEffects = details.specials;
+
+  return { pts, hpGain, mpGain, statKey, statGain: t, details };
 }

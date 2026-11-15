@@ -1,5 +1,5 @@
 import { WORLD_PRESETS, COSMIC_TIERS } from "./worlds.js";
-import { computeDerivedStats } from "./engine.js";
+import { computeDerivedStats, getSkillStageDetails } from "./engine.js";
 import {
   ORIGIN_ENTITIES,
   CATALOG_PHYSIQUES,
@@ -216,7 +216,11 @@ Văn phong tham khảo: ${world.styleRef}. Giọng văn: ${state.tone}.
 - Chỉ số gốc: Căn cốt ${state.player.stats.cancot}, Tâm trí ${state.player.stats.tamtin}, Linh hồn ${state.player.stats.linhhon}, Ngộ tính ${state.player.stats.ngotinh}, Thiên phú ${state.player.stats.thienphu}, Khí vận ${state.player.stats.khivan}, Công đức ${state.player.stats.congduc}, Nghiệp lực ${state.player.stats.nghiepluc}, Nhân duyên ${state.player.stats.nhanduyen}, Danh vọng ${state.player.stats.danhvong}.
 - Chỉ số cộng hưởng: Thiên phú thực ${derived.effectiveTalent}, May mắn thực ${derived.effectiveLuck}, Nhạy bén âm mưu ${derived.conspiracySense}, Kháng linh hồn ${derived.soulDefense}, Trạng thái Thần Thức: ${derived.hasDivineSense ? "ĐÃ KHAI MỞ (có thể dùng Thần Thức/Nguyên Thần)" : "CHƯA CÓ THẦN THỨC (tuyệt đối không viết nhân vật dùng thần thức, chỉ có ngũ quan và linh cảm mơ hồ)"}.
 - Phòng ngự & Kháng tính: Giáp đang mặc [${state.player.defense?.equippedArmor || "Không"}], Vũ khí [${state.player.equipment?.weapon || "Không"}], Phụ kiện [${state.player.equipment?.accessory || "Không"}], Tổng Hộ Giáp ${derived.baseArmor}, Kháng Vật Lý ${derived.effectiveResist.physical}%, Kháng Phép/Nguyên Tố ${derived.effectiveResist.magic}%, Kháng Linh Hồn ${derived.effectiveResist.soul}%, Kháng Độc/Tà Khí ${derived.effectiveResist.poison}%, Kháng Quy Tắc/Thời-Không ${derived.effectiveResist.law}%.${derived.equipmentEffects?.length ? `\n- Hiệu ứng trang bị đang kích hoạt: ${derived.equipmentEffects.join(" | ")}` : ""}
-- Kỹ năng: ${state.player.skills.map((s) => `${s.name}${s.isDao ? " [ĐẠO]" : ""} (Bậc ${s.tier} Lv.${s.level}, ${s.grade}, Ý cảnh: ${s.daoIntent})`).join("; ")}
+- Kỹ năng: ${state.player.skills.map((s) => {
+    const st = getSkillStageDetails(s);
+    const spText = st.specials.length ? ` | Đặc hiệu: ${st.specials[st.specials.length - 1]}` : "";
+    return `${s.name}${s.isDao ? " [ĐẠO]" : ""} (Bậc ${s.tier} Lv.${s.level}, ${s.grade}, ${st.summaryText}, Ý cảnh: ${s.daoIntent}${spText})`;
+  }).join("; ")}
 - Túi đồ: ${state.player.inventory.map((i) => `${i.name} x${i.qty}`).join("; ")}
 - Nhân mạch: ${state.player.relationships.map((r) => `${r.name} [${r.type}, Hảo cảm ${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- Địch thủ đang giao chiến (HP TỐI ĐA ĐÃ KHÓA): ${state.enemy.name} (${state.enemy.realm}) | HP hiện tại: ${state.enemy.hp}/${state.enemy.maxHp} | Ý đồ trước: ${state.enemy.intent || "Đang giao chiến"}` : ""}
 
@@ -237,7 +241,7 @@ ${state.authorDirectives || "Không có."}
 1. Tuyệt đối KHÔNG tiết lộ trực tiếp Sổ Tay Âm Mưu Ẩn, mà hãy rải manh mối tinh tế (ánh mắt, lời nói mâu thuẫn, vật chứng) để người chơi tự suy luận. Nếu Tâm trí (${state.player.stats.tamtin}) cao, có thể mô tả linh cảm bất an rõ hơn. Ở cảnh giới thấp (Luyện Khí, Trúc Cơ, Kim Đan, Nguyên Anh — trước Tầng 1 Hóa Thần / Ma Đạo Sư / Chấp Hành Quan, trừ khi có công pháp/kỳ ngộ/pháp bảo đặc biệt), TUYỆT ĐỐI KHÔNG viết cả nhân vật chính lẫn NPC Trúc Cơ/Kim Đan/Nguyên Anh có "Thần Thức" — dưới Hóa Thần chỉ có ngũ quan nhạy bén, linh cảm hoặc linh giác; chỉ từ **Hóa Thần** trở lên mới ngưng tụ được Thần Thức!
 2. Lồng ghép các yếu tố: tổ chức/tông môn/thế gia, bán thần/tiên thần hạ phàm, di tích văn minh cổ, bảo vật/thiên tài địa bảo, truyền công hoặc bị hút tu vị.
 3. Thỉnh thoảng (khoảng 15-20% cơ hội ở lượt khám phá) hãy kích hoạt mode "ngodao" và đặt một **Câu hỏi Ngộ Đạo** về tự nhiên, vật lý, triết học hoặc quy luật vũ trụ để người chơi trả lời.
-4. Nếu vào chiến đấu, đặt mode "combat" và điền đầy đủ thông tin \`enemy\` (kèm \`intent\` là ý đồ ra chiêu tiếp theo của địch). Các trường \`enemy.name\` (≤ 8 chữ), \`enemy.realm\` (≤ 6 chữ), \`enemy.intent\` (≤ 25 chữ) PHẢI cực kỳ ngắn gọn, không lặp chữ. **QUAN TRỌNG**: Khi đang giao chiến với cùng một địch thủ, \`enemy.maxHp\` PHẢI GIỮ NGUYÊN CỐ ĐỊNH như lượt trước và \`enemy.hp\` kế thừa đúng từ HP hiện tại (không tự ý reset đầy máu hay đổi \`maxHp\`). **Ngoại lệ hợp lệ**: nếu địch dính skill giảm Max HP, được buff tăng Max HP hoặc giải trừ debuff khiến Max HP thay đổi, đặt \`enemy.maxHpChanged = true\` và cập nhật \`enemy.maxHp\`; nếu địch tự hồi máu/được hồi phục/buff tăng HP hiện tại, đặt \`enemy.hpHealed = true\`. Nếu \`enemy.hp <= 0\`, chuyển \`mode\` về \`"normal"\` và đặt \`enemy = null\`.
+4. Nếu vào chiến đấu, đặt mode "combat" và điền đầy đủ thông tin \`enemy\` (kèm \`intent\` là ý đồ ra chiêu tiếp theo của địch). Các trường \`enemy.name\` (≤ 8 chữ), \`enemy.realm\` (≤ 6 chữ), \`enemy.intent\` (≤ 25 chữ) PHẢI cực kỳ ngắn gọn, không lặp chữ. Tham chiếu HP địch theo cảnh giới: Luyện Khí 100–1.000+ (thể chất/công pháp đặc biệt có thể cao hơn), Trúc Cơ 1.000–5.000, Kim Đan 5.000–10.000, Nguyên Anh 10.000–50.000, Hóa Thần+ 50.000+. **QUAN TRỌNG**: Khi đang giao chiến với cùng một địch thủ, \`enemy.maxHp\` PHẢI GIỮ NGUYÊN CỐ ĐỊNH như lượt trước và \`enemy.hp\` kế thừa đúng từ HP hiện tại (không tự ý reset đầy máu hay đổi \`maxHp\`). **Ngoại lệ hợp lệ**: nếu địch dính skill giảm Max HP, được buff tăng Max HP hoặc giải trừ debuff khiến Max HP thay đổi, đặt \`enemy.maxHpChanged = true\` và cập nhật \`enemy.maxHp\`; nếu địch tự hồi máu/được hồi phục/buff tăng HP hiện tại, đặt \`enemy.hpHealed = true\`. Nếu \`enemy.hp <= 0\`, chuyển \`mode\` về \`"normal"\` và đặt \`enemy = null\`.
 5. Khi nhận kết quả tung xúc xắc từ Engine (ví dụ: Mất Tiên Cơ, Đoạt Tiên Cơ, Đại Thành Công, Thất Bại), BẮT BUỘC viết diễn biến và trừ/cộng HP, MP, Tu vi khớp với kết quả đó.
 6. Danh vọng cao thu hút cả cơ hội VIP lẫn sát thủ/ganh ghét. Nghiệp lực cao dễ gặp tâm ma/tai họa.
 7. VÒNG LẶP NHÂN QUẢ ĐỊNH SẴN (Causal Loop): Khi nhân vật du hành về quá khứ, hành động của họ KHÔNG dễ dàng xóa bỏ lịch sử mà thường CHÍNH LÀ NGUYÊN NHÂN ĐỊNH SẴN tạo ra các di tích, lời tiên tri, bảo vật hoặc sự kiện ở hiện tại (Bootstrap Paradox). Hãy khéo léo gắn kết các Mỏ Neo Nhân Quả! Chỉ ở Tầng 4–5 mới có thể bẻ gãy hoàn toàn định mệnh nhân quả.
@@ -433,13 +437,128 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
   throw new Error(`Gemini API Error (${lastStatus}): ${detail}\n[Đã thử: ${attempts.join(", ")}]`);
 }
 
+export function getActiveProvider(settings = {}) {
+  return settings.provider || "gemini";
+}
+
+export function getActiveApiKey(settings = {}) {
+  const provider = getActiveProvider(settings);
+  if (provider === "groq") return (settings.groqApiKey || "").trim();
+  if (provider === "openrouter") return (settings.openrouterApiKey || "").trim();
+  return (settings.apiKey || "").trim();
+}
+
+const OPENAI_JSON_FORMAT_HINT = `
+=== BẮT BUỘC TRẢ VỀ ĐÚNG 1 JSON OBJECT HỢP LỆ (KHÔNG MARKDOWN) ===
+{
+  "narrative": "string (diễn biến chi tiết bằng tiếng Việt)",
+  "mode": "normal | combat | ngodao",
+  "choices": [{ "text": "string", "statTag": "Căn cốt | Tâm trí | Linh hồn | Ngộ tính | Thiên phú | Khí vận", "risk": "Thấp | Trung bình | Cao" }],
+  "enemy": null | { "name": "string", "realm": "string", "hp": 100, "maxHp": 100, "maxHpChanged": false, "hpHealed": false, "intent": "string" },
+  "ngodaoQuestion": null | "string",
+  "stateChanges": {
+    "hpDelta": 0, "mpDelta": 0, "cultivationDelta": 0, "potentialDelta": 0, "ageDelta": 0,
+    "primaryCurrencyDelta": 0, "contribDelta": 0,
+    "statDeltas": {}, "armorDelta": 0, "resistDeltas": {},
+    "newItems": [], "newSkills": [], "relationshipUpdates": [],
+    "parallelRealm": null, "realmUpdate": null, "physiqueUpdate": null, "physiqueProgressDelta": 0,
+    "timelineUpdate": null, "newCausalAnchor": null, "systemAlert": null
+  },
+  "summaryUpdate": "string (1-2 câu tóm tắt lượt này)",
+  "hiddenNotesUpdate": "string (ghi chú âm mưu ẩn nếu có)"
+}`;
+
+export async function listProviderModels(provider, apiKey) {
+  if (provider === "groq") {
+    const r = await fetchWithTimeout(
+      "https://api.groq.com/openai/v1/models",
+      { headers: { Authorization: `Bearer ${apiKey}` } },
+      20000
+    );
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error?.message || "Không quét được model Groq");
+    const excluded = ["whisper", "tts", "guard", "safeguard"];
+    const priority = (id) => {
+      const low = id.toLowerCase();
+      if (low.includes("llama-3.3-70b")) return 10;
+      if (low.includes("qwen")) return 9;
+      if (low.includes("llama-4")) return 8;
+      if (low.includes("deepseek")) return 7;
+      return 1;
+    };
+    return (d.data || [])
+      .map((m) => m.id)
+      .filter((id) => id && !excluded.some((ex) => id.toLowerCase().includes(ex)))
+      .sort((a, b) => priority(b) - priority(a) || a.localeCompare(b));
+  }
+  if (provider === "openrouter") {
+    const r = await fetchWithTimeout(
+      "https://openrouter.ai/api/v1/models",
+      { headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {} },
+      20000
+    );
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error?.message || "Không quét được model OpenRouter");
+    const freeModels = (d.data || [])
+      .map((m) => m.id)
+      .filter((id) => id && id.endsWith(":free"));
+    return freeModels.sort();
+  }
+  return listGeminiModels(apiKey);
+}
+
+async function callOpenAICompatible({ url, apiKey, model, systemPrompt, userContent, temperature = 0.85, extraHeaders = {}, providerName = "AI" }) {
+  let res;
+  let data = {};
+  try {
+    res = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          ...extraHeaders,
+        },
+        body: JSON.stringify({
+          model,
+          temperature,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+        }),
+      },
+      45000
+    );
+    data = await res.json().catch(() => ({}));
+  } catch (e) {
+    if (e.name === "AbortError") {
+      throw new Error(`${providerName} API quá thời gian chờ (45s). Hãy thử lại.`);
+    }
+    throw new Error(`${providerName} lỗi kết nối: ${e.message}`);
+  }
+  if (!res.ok) {
+    const msg = data.error?.message || `HTTP ${res.status}`;
+    if (res.status === 429) {
+      throw new Error(`${providerName} giới hạn lượt (429): ${msg}`);
+    }
+    throw new Error(`${providerName} API Error (${res.status}): ${msg}`);
+  }
+  const raw = data?.choices?.[0]?.message?.content || "";
+  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  if (!cleaned) throw new Error(`${providerName} không trả về nội dung hợp lệ.`);
+  return JSON.parse(cleaned);
+}
+
 export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent = false }) {
-  const apiKey = settings.apiKey?.trim();
+  const provider = getActiveProvider(settings);
+  const apiKey = getActiveApiKey(settings);
   if (!apiKey) {
     throw new Error("NO_API_KEY");
   }
 
-  const model = pickModel(settings, state, isMajorEvent);
   const recentLogs = state.logs
     .slice(-4)
     .map((l) => (l.type === "player" ? `[Người chơi]: ${l.text}` : `[Diễn biến]: ${l.text}`))
@@ -447,31 +566,63 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
 
   const fullUserContent = `Tóm tắt cốt truyện đã qua:\n${state.storySummary}\n\nDiễn biến gần nhất:\n${recentLogs || "(Mới bắt đầu)"}\n\nHành động / Sự kiện lượt này:\n${userPrompt}`;
 
-  const payload = {
-    systemInstruction: {
-      parts: [{ text: buildSystemPrompt(state) }],
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: fullUserContent }],
+  let parsed;
+  let modelUsed = "";
+
+  if (provider === "groq" || provider === "openrouter") {
+    const isGroq = provider === "groq";
+    const defaultModel = isGroq ? "llama-3.3-70b-versatile" : "meta-llama/llama-3.3-70b-instruct:free";
+    modelUsed = (settings.customModel || "").trim() || defaultModel;
+    const url = isGroq
+      ? "https://api.groq.com/openai/v1/chat/completions"
+      : "https://openrouter.ai/api/v1/chat/completions";
+    const extraHeaders = isGroq
+      ? {}
+      : { "HTTP-Referer": location.origin, "X-Title": "Dao Nguyen Chronicles" };
+    parsed = await callOpenAICompatible({
+      url,
+      apiKey,
+      model: modelUsed,
+      systemPrompt: `${buildSystemPrompt(state)}\n${OPENAI_JSON_FORMAT_HINT}`,
+      userContent: fullUserContent,
+      temperature: 0.85,
+      extraHeaders,
+      providerName: isGroq ? "Groq" : "OpenRouter",
+    });
+  } else {
+    const model = pickModel(settings, state, isMajorEvent);
+    const payload = {
+      systemInstruction: {
+        parts: [{ text: buildSystemPrompt(state) }],
       },
-    ],
-    generationConfig: {
-      temperature: 0.9,
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-    },
-  };
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: fullUserContent }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.9,
+        responseMimeType: "application/json",
+        responseSchema: RESPONSE_SCHEMA,
+      },
+    };
 
-  const data = await callGeminiProxyOrDirect({ apiKey, model, payload });
+    const data = await callGeminiProxyOrDirect({ apiKey, model, payload });
 
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) {
-    throw new Error("Gemini không trả về nội dung hợp lệ.");
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new Error("Gemini không trả về nội dung hợp lệ.");
+    }
+    parsed = JSON.parse(rawText);
+    modelUsed = data._resolvedModel || model;
   }
 
-  const parsed = JSON.parse(rawText);
+  parsed.narrative = parsed.narrative || "...";
+  parsed.mode = ["normal", "combat", "ngodao"].includes(parsed.mode) ? parsed.mode : "normal";
+  parsed.choices = Array.isArray(parsed.choices) ? parsed.choices : [];
+  parsed.stateChanges = parsed.stateChanges || {};
+
   if (parsed.enemy) {
     const cleanField = (str, maxLen) =>
       String(str || "")
@@ -485,16 +636,16 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
   }
 
   return {
-    modelUsed: data._resolvedModel || model,
+    modelUsed,
     result: parsed,
   };
 }
 
 export async function compactStoryMemory({ settings, state }) {
-  const apiKey = settings.apiKey?.trim();
+  const provider = getActiveProvider(settings);
+  const apiKey = getActiveApiKey(settings);
   if (!apiKey) return null;
 
-  const model = settings.customModel || "gemini-3.8-flash";
   const prompt = `Hãy nén (compact) tóm tắt cốt truyện và sổ tay âm mưu dưới đây thành bản cực kỳ súc tích để tiết kiệm token nhưng KHÔNG làm mất các sự kiện cốt lõi, tên NPC quan trọng, ân oán, lời hứa và âm mưu đang diễn ra.
 
 === TÓM TẮT HIỆN TẠI ===
@@ -503,6 +654,28 @@ ${state.storySummary}
 === SỔ TAY ÂM MƯU ẨN ===
 ${state.hiddenNotes}`;
 
+  if (provider === "groq" || provider === "openrouter") {
+    const isGroq = provider === "groq";
+    const model = (settings.customModel || "").trim() || (isGroq ? "llama-3.3-70b-versatile" : "meta-llama/llama-3.3-70b-instruct:free");
+    const url = isGroq
+      ? "https://api.groq.com/openai/v1/chat/completions"
+      : "https://openrouter.ai/api/v1/chat/completions";
+    try {
+      return await callOpenAICompatible({
+        url,
+        apiKey,
+        model,
+        systemPrompt: 'Trả về JSON object có đúng 2 trường: {"compactedSummary":"...","compactedHiddenNotes":"..."}',
+        userContent: prompt,
+        temperature: 0.3,
+        providerName: isGroq ? "Groq" : "OpenRouter",
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  const model = settings.customModel || "gemini-3.8-flash";
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
