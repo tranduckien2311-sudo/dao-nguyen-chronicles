@@ -563,7 +563,11 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
     };
     const val = statMap[statTag] ?? state.player.stats.tamtin;
     const roll = rollCheck(val, 12);
-    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do suy luận"}): "${text}".\nKết quả tung xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).`;
+    const estDmg = Math.max(15, Math.round((state.player.maxHp || 150) * 0.16 + val * 3));
+    const atkHint = /(giết|đánh|chém|tấn công|ám sát|xông|công kích|hạ thủ)/i.test(text)
+      ? ` Sát thương ước tính ở cảnh giới [${state.player.realm}] chỉ ~${estDmg} DMG (nếu đối thủ là Chưởng Môn/Trưởng Lão/cảnh giới cao hơn thì đòn này vô hiệu hoặc bị phản sát nặng).`
+      : "";
+    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).${atkHint}`;
   }
 
   isBusy = true;
