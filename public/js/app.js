@@ -28,6 +28,7 @@ import {
   computeDerivedStats,
   createNewGame,
   rollCheck,
+  checkAbsurdOrSuicidalAction,
   resolveCombatCheck,
   resolveBreakthrough,
   resolveCustomTechnique,
@@ -574,17 +575,24 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
   let promptDetail = "";
   let combatOutcome = null;
   let combatResult = null;
+  let forceDeath = false;
+
+  const absurdCheck = kind === "text" ? checkAbsurdOrSuicidalAction(state, text) : null;
+  if (absurdCheck) {
+    forceDeath = Boolean(absurdCheck.forceDeath);
+  }
 
   if (state.mode === "combat") {
     const res = resolveCombatCheck(state, text);
     combatResult = res;
+    if (res.forceDeath) forceDeath = true;
     combatOutcome = `${res.outcome} (Gây ${res.playerDmg} DMG • Nhận ${res.enemyDmg} DMG)`;
     const curEnemyHp = state.enemy ? Number(state.enemy.hp) || 0 : 0;
     const expectedEnemyHp = Math.max(0, curEnemyHp - res.playerDmg);
-    promptDetail = `[CHẾ ĐỘ CHIẾN ĐẤU] Người chơi nhập: "${text}".\nKết quả thẩm định Engine: ${res.outcome} (${res.reason}, d20=${res.roll.d20}, tổng=${res.roll.total}).\nSát thương Engine tính toán: Người chơi gây **${res.playerDmg} DMG** lên địch${state.enemy ? ` (HP địch còn khoảng ${expectedEnemyHp}/${state.enemy.maxHp})` : ""}; Địch phản đòn gây **${res.enemyDmg} DMG** lên người chơi (đã trừ Giáp/Kháng).\nHãy viết diễn biến chiến đấu khớp với lượng sát thương này, đặt \`stateChanges.hpDelta = ${-res.enemyDmg}\` và cập nhật \`enemy.hp = ${expectedEnemyHp}\` (nếu địch chết đặt \`mode="normal"\`, \`enemy=null\`).`;
+    promptDetail = `[CHẾ ĐỘ CHIẾN ĐẤU] Người chơi nhập: "${text}".\nKết quả thẩm định Engine: ${res.outcome} (${res.reason}, d20=${res.roll.d20}, tổng=${res.roll.total}).\nSát thương Engine tính toán: Người chơi gây **${res.playerDmg} DMG** lên địch${state.enemy ? ` (HP địch còn khoảng ${expectedEnemyHp}/${state.enemy.maxHp})` : ""}; Địch phản đòn gây **${res.enemyDmg} DMG** lên người chơi (đã trừ Giáp/Kháng).\nHãy viết diễn biến chiến đấu khớp với lượng sát thương này, đặt \`stateChanges.hpDelta = ${-res.enemyDmg}\` và cập nhật \`enemy.hp = ${expectedEnemyHp}\` (nếu địch chết đặt \`mode="normal"\`, \`enemy=null\`).${absurdCheck ? `\n${absurdCheck.promptNote}` : ""}`;
   } else if (state.mode === "ngodao") {
     const roll = rollCheck(state.player.stats.ngotinh + state.player.stats.tamtin, 14);
-    promptDetail = `[TRẢ LỜI NGỘ ĐẠO] Câu hỏi: "${state.ngodaoQuestion}".\nCâu trả lời của người chơi: "${text}".\nTung xúc xắc Ngộ Tính: ${roll.tier}.\nHãy chấm độ sâu sắc câu trả lời (nếu hay hãy thưởng Tu vi lớn, Ngộ tính hoặc Thần thông/Đạo Ý Cảnh mới!) rồi chuyển về mode="normal".`;
+    promptDetail = `[TRẢ LỜI NGỘ ĐẠO] Câu hỏi: "${state.ngodaoQuestion}".\nCâu trả lời của người chơi: "${text}".\nTung xúc xắc Ngộ Tính: ${roll.tier}.\nHãy chấm độ sâu sắc câu trả lời (nếu hay hãy thưởng Tu vi lớn, Ngộ tính hoặc Thần thông/Đạo Ý Cảnh mới!) rồi chuyển về mode="normal".${absurdCheck ? `\n${absurdCheck.promptNote}` : ""}`;
   } else {
     const statMap = {
       "Căn cốt": state.player.stats.cancot,
@@ -606,7 +614,7 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
     const atkHint = /(giết|đánh|chém|tấn công|ám sát|xông|công kích|hạ thủ)/i.test(text)
       ? ` Sát thương ước tính ở cảnh giới [${state.player.realm}] chỉ ~${estDmg} DMG (nếu đối thủ là Chưởng Môn/Trưởng Lão/cảnh giới cao hơn thì đòn này vô hiệu hoặc bị phản sát nặng).`
       : "";
-    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).${atkHint}`;
+    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}).${atkHint}${absurdCheck ? `\n${absurdCheck.promptNote}` : ""}`;
   }
 
   isBusy = true;
@@ -619,7 +627,7 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
       userPrompt: promptDetail,
       isMajorEvent: state.mode === "ngodao",
     });
-    applyAiResult(result, combatOutcome, modelUsed, combatResult);
+    applyAiResult(result, combatOutcome, modelUsed, combatResult, forceDeath);
 
     if ((state.storySummary || "").length > 1400) {
       const sumLines = state.storySummary.split("\n").filter(Boolean);
@@ -642,7 +650,7 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
   }
 }
 
-function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult = null) {
+function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult = null, forceDeath = false) {
   const prevEnemy = state.mode === "combat" && state.enemy ? state.enemy : null;
   state.turn += 1;
   state.mode = res.mode || "normal";
@@ -700,11 +708,11 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult =
   const p = state.player;
   const isSoulForm = Boolean(state.isAfterlife && state.afterlifeForm !== "ghost_body");
   if (isSoulForm) {
-    p.mp = Math.max(0, Math.min(p.maxMp, p.mp + (sc.hpDelta || 0) + (sc.mpDelta || 0)));
+    p.mp = forceDeath ? 0 : Math.max(0, Math.min(p.maxMp, p.mp + (sc.hpDelta || 0) + (sc.mpDelta || 0)));
     p.maxHp = p.maxMp;
     p.hp = p.mp;
   } else {
-    p.hp = Math.max(0, Math.min(p.maxHp, p.hp + (sc.hpDelta || 0)));
+    p.hp = forceDeath ? 0 : Math.max(0, Math.min(p.maxHp, p.hp + (sc.hpDelta || 0)));
     p.mp = Math.max(0, Math.min(p.maxMp, p.mp + (sc.mpDelta || 0)));
   }
   p.cultivation = Math.max(0, Math.min(100, p.cultivation + (sc.cultivationDelta || 0)));

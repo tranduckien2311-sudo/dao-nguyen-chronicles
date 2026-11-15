@@ -461,14 +461,15 @@ export function resolveCombatCheck(state, userText) {
   }
 
   // Kiểm tra hành động ngạo mạn phi thực tế ở tầng thấp
-  const godlikeAbuse = /(búng tay chết|nhất kích tất sát|vô địch|xóa sổ vũ trụ|chết ngay)/i.test(lower);
+  const godlikeAbuse = /(búng tay chết|nhất kích tất sát|vô địch|xóa sổ vũ trụ|chết ngay|giết thiên đạo|one hit|1 hit|hủy diệt hành tinh|bất tử)/i.test(lower);
   if (godlikeAbuse && state.player.tier < 4) {
     return {
-      outcome: "Mất Tiên Cơ - Bị Đả Thương",
-      reason: "Vọng tưởng vượt cấp, sơ hở toàn thân khiến địch nhân chớp thời cơ phản công trọng thương!",
-      roll: { d20: 2, total: 2 },
+      outcome: "Thiên Phạt - Vọng Tưởng Bị Tru Diệt",
+      reason: "Vọng tưởng nghịch thiên ở cảnh giới thấp, Thiên Đạo giáng Lôi Phạt nghiền nát!",
+      roll: { d20: 1, total: 1 },
       playerDmg: 0,
-      enemyDmg: Math.max(15, Math.round(rawEnemyAtk * 1.4)),
+      enemyDmg: playerMaxHp,
+      forceDeath: true,
     };
   }
 
@@ -505,6 +506,51 @@ export function resolveCombatCheck(state, userText) {
     playerDmg: Math.max(10, rawPlayerAtk),
     enemyDmg: Math.max(5, Math.round(rawEnemyAtk * 0.75)),
   };
+}
+
+export function checkAbsurdOrSuicidalAction(state, userText) {
+  const text = String(userText || "").trim();
+  const lower = text.toLowerCase();
+  if (!text) return null;
+
+  // 1. Hành động quá vô lý / ảo tưởng sức mạnh vượt cấp / spam nhảm
+  const absurdRegex = /(búng tay chết|nhất kích tất sát|vô địch thiên hạ|xóa sổ vũ trụ|giết thiên đạo|xé rách bầu trời|đạp nát thế giới|hóa thánh ngay|ta là thần|one hit|1 hit|hủy diệt hành tinh|triệu hồi admin|hack game|buff bất tử)/i;
+  if (absurdRegex.test(lower) && (state?.player?.tier || 1) < 4) {
+    return {
+      type: "heavenly_punishment",
+      forceDeath: true,
+      title: "⚡ THIÊN ĐẠO BẤT DUNG — THIÊN PHẠT GIÁNG LÂM",
+      promptNote:
+        "[THIÊN PHẠT BẮT BUỘC] Người chơi gõ hành động quá vô lý/ngạo mạn vượt xa cảnh giới! Thiên Đạo giáng Cửu Tiêu Thần Lôi trừng phạt, KHÔNG được xoay sở cứu vãn. Hãy đặt stateChanges.hpDelta = -999999 (chết ngay lập tức) và miêu tả kết cục bị Thiên Phạt đánh tan xác.",
+    };
+  }
+
+  // 2. Hành động tự tìm chết / tự sát / khiêu khích kẻ trên cơ tuyệt đối
+  const suicidalRegex = /(tự sát|tự vẫn|tự tử|đâm đầu vào|lao vào miệng|chửi thiên đạo|chửi chưởng môn|xông vô giết chưởng môn|giết chưởng môn|giết trưởng lão|chém sư tôn|đốt kinh mạch|phá đan điền|nhảy xuống vực|tìm chết|muốn chết|chết quách)/i;
+  if (suicidalRegex.test(lower) && (state?.player?.tier || 1) < 3) {
+    return {
+      type: "suicidal",
+      forceDeath: true,
+      title: "💀 TỰ TÌM ĐƯỜNG CHẾT",
+      promptNote:
+        "[NGƯỜI CHƠI TÌM CHẾT] Người chơi tự tìm đường chết hoặc khiêu khích cường giả/cảnh giới quá cao! Tuyệt đối KHÔNG xoay sở cứu sống hay cho thoát thân. Hãy đặt stateChanges.hpDelta = -999999 (rút HP về 0 cho chết ngay lập tức) và miêu tả cái chết thảm khốc.",
+    };
+  }
+
+  // 3. Text quá ngắn / spam ký tự vô nghĩa
+  if (text.length < 3 || /^[^a-zA-Z0-9\u00C0-\u1EF9]+$/.test(text)) {
+    return {
+      type: "nonsense",
+      forceDeath: false,
+      title: "⚡ THIÊN ĐẠO CẢNH CÁO",
+      promptNote:
+        "[HÀNH ĐỘNG VÔ NGHĨA] Người chơi nhập ký tự vô nghĩa/ngớ ngẩn. Cho gặp tai họa/Thiên Phạt nhẹ hoặc bị tập kích bất ngờ, trừ nặng 50% HP (`hpDelta = -" +
+        Math.max(20, Math.round((state?.player?.maxHp || 100) * 0.5)) +
+        "`).",
+    };
+  }
+
+  return null;
 }
 
 export function resolveBreakthrough(state) {

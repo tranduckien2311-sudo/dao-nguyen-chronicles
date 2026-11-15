@@ -224,7 +224,7 @@ export function buildSystemPrompt(state) {
 [LUẬT]
 1. Dưới Hóa Thần cấm viết dùng Thần Thức. Lồng ghép tông môn/di tích/âm mưu. ~15% lượt thường mở mode="ngodao" hỏi triết học/vũ trụ.
 2. Combat: mode="combat", enemy ngắn gọn (HP: LuyệnKhí 100-1k+, TrúcCơ 1k-5k, KimĐan 5k-10k, NguyênAnh 10k-50k, HóaThần+ 50k+). Giữ nguyên enemy.maxHp & kế thừa enemy.hp; chỉ đặt maxHpChanged=true khi buff/trừ/giải MaxHP, hpHealed=true khi hồi máu. hp<=0 -> mode="normal", enemy=null.
-3. Theo kết quả xúc xắc/DMG Engine; KHÔNG biến câu chữ hành động của người chơi thành tên chiêu thức. Tuyệt đối giữ khoảng cách cảnh giới: Luyện Khí Tầng 1 chỉ gây ~20-80 DMG, không thể đánh trọng thương hay hạ Chưởng Môn/Trưởng Lão/cảnh giới cao hơn (khiêu khích cường giả cao tầng sẽ bị áp chế hoặc phản sát trừ hpDelta cực nặng).
+3. Theo kết quả xúc xắc/DMG Engine; KHÔNG biến câu chữ hành động của người chơi thành tên chiêu thức. Tuyệt đối giữ khoảng cách cảnh giới: Luyện Khí Tầng 1 chỉ gây ~20-80 DMG, không thể đánh trọng thương hay hạ Chưởng Môn/Trưởng Lão/cảnh giới cao hơn. TỈ LỆ CHẾT CAO: nếu người chơi gõ hành động ngu ngốc/vô lý/ngạo mạn -> giáng Thiên Phạt; nếu tự tìm chết hoặc thất bại trước cường giả -> CHO CHẾT THẲNG (hpDelta=-999999), TUYỆT ĐỐI KHÔNG xoay sở cứu vãn!
 4. Cấm đột phá mồm: lượt thường không viết đã đột phá & để realmUpdate=null (trừ truyền công/bị phế).
 5. potentialDelta mặc định 0 (chỉ cho khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp >=80đ). Trang bị gắn slot(armor|weapon|accessory).
 6. choices(3-4 mục) bám sát hoàn cảnh & đồ/skill thực tế; statTag chỉ dùng: Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận.
