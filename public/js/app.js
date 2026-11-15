@@ -578,21 +578,17 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
     });
     applyAiResult(result, combatOutcome, modelUsed, combatResult);
 
-    if (state.turn > 0 && (state.turn % 6 === 0 || (state.storySummary || "").length > 1600)) {
-      compactStoryMemory({ settings, state })
-        .then((compacted) => {
-          if (!compacted) return;
-          state.storySummary = compacted.compactedSummary;
-          state.hiddenNotes = compacted.compactedHiddenNotes;
-          state.logs.push({
-            type: "system",
-            title: "Nén Ký Ức",
-            text: `Đã tự động compact tóm tắt cốt truyện ở lượt ${state.turn} để tiết kiệm token.`,
-          });
-          saveGameState(state);
-          renderFeed();
-        })
-        .catch(() => {});
+    if ((state.storySummary || "").length > 1400) {
+      const sumLines = state.storySummary.split("\n").filter(Boolean);
+      if (sumLines.length > 8) {
+        state.storySummary = [...sumLines.slice(0, 2), ...sumLines.slice(-6)].join("\n");
+      }
+    }
+    if ((state.hiddenNotes || "").length > 1000) {
+      const noteLines = state.hiddenNotes.split("\n").filter(Boolean);
+      if (noteLines.length > 6) {
+        state.hiddenNotes = [...noteLines.slice(0, 2), ...noteLines.slice(-4)].join("\n");
+      }
     }
   } catch (err) {
     state.logs.push({ type: "system", title: "Lỗi AI", text: err.message });

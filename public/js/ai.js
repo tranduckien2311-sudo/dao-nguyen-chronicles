@@ -198,36 +198,30 @@ export function buildSystemPrompt(state) {
   const tierInfo = COSMIC_TIERS[state.player.tier - 1];
   const derived = computeDerivedStats(state.player);
   const p = state.player;
-  const hiddenTail = String(state.hiddenNotes || "").slice(-700);
+  const hiddenTail = String(state.hiddenNotes || "").slice(-450);
   const originEntity = ORIGIN_ENTITIES[p.physiqueGroup]?.[0];
+  const catalogHint =
+    state.mode === "normal"
+      ? `\n- Gợi ý T${p.tier}: CP[${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Chiến[${pickRandomSample(CATALOG_CHIEN_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Thú[${pickRandomSample(MYTHIC_CREATURES, p.tier, 2).map((c) => c.name).join(",")}]`
+      : "";
 
-  return `Bạn là Game Master (GM) tiểu thuyết tương tác đa vũ trụ tiếng Việt. Văn phong: ${world.styleRef}. Giọng: ${state.tone}.
-
-=== BỐI CẢNH & NHÂN VẬT ===
-- Thế giới: ${tierInfo.name} | Giới vực: ${state.currentParallelRealm} | Dòng TG: ${state.timeline || "Hiện Tại"} | ${state.isAfterlife ? "ÂM GIỚI (TU QUỶ)" : "Dương gian"} | Mỏ neo: ${(state.causalAnchors || []).slice(-4).join(" | ") || "Chưa có"}
-- ${p.name} | ${p.originName} | Thể chất: ${p.physiqueName || "Phàm Thể"} (${p.physiqueGroup || "Cơ Bản"}, ${p.physiqueProgress || 0}%, T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng: ${p.goldenName}
-- Cảnh giới: ${p.realm} | Tuổi: ${p.age}/${p.lifespan} | HP: ${p.hp}/${p.maxHp} | MP: ${p.mp}/${p.maxMp} | Tu vi: ${p.cultivation}%
-- Chỉ số: Căn cốt ${p.stats.cancot}, Tâm trí ${p.stats.tamtin}, Linh hồn ${p.stats.linhhon}, Ngộ tính ${p.stats.ngotinh}, Thiên phú ${p.stats.thienphu}, Khí vận ${p.stats.khivan}, Công đức ${p.stats.congduc}, Nghiệp lực ${p.stats.nghiepluc}, Nhân duyên ${p.stats.nhanduyen}, Danh vọng ${p.stats.danhvong} (May mắn thực ${derived.effectiveLuck}, Nhạy âm mưu ${derived.conspiracySense}).
-- Thần Thức: ${derived.hasDivineSense ? "ĐÃ KHAI MỞ" : "CHƯA CÓ (dưới Hóa Thần cấm viết dùng thần thức, chỉ có ngũ quan/linh cảm)"}.
-- Trang bị & Kháng: Giáp [${p.defense?.equippedArmor || "Không"}], Vũ khí [${p.equipment?.weapon || "Không"}], Phụ kiện [${p.equipment?.accessory || "Không"}], Giáp ${derived.baseArmor}, Kháng VL ${derived.effectiveResist.physical}% / Phép ${derived.effectiveResist.magic}% / Hồn ${derived.effectiveResist.soul}% / Độc ${derived.effectiveResist.poison}% / Luật ${derived.effectiveResist.law}%.${derived.equipmentEffects?.length ? ` Hiệu ứng: ${derived.equipmentEffects.join(" | ")}` : ""}
-- Kỹ năng: ${p.skills.map((s) => `${s.name}${s.isDao ? "[ĐẠO]" : ""}(B${s.tier}L${s.level},${getSkillStageDetails(s).summaryText})`).join("; ")}
-- Túi đồ: ${p.inventory.slice(-10).map((i) => `${i.name}x${i.qty}`).join("; ")}
-- Nhân mạch: ${p.relationships.slice(-8).map((r) => `${r.name}[${r.type},${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- ĐỊCH ĐANG CHIẾN (KHÓA maxHp): ${state.enemy.name} (${state.enemy.realm}) | HP: ${state.enemy.hp}/${state.enemy.maxHp} | Ý đồ: ${state.enemy.intent || "Đang đánh"}` : ""}
-- Gợi ý T${p.tier}: Công pháp [${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 2).map((x) => x.name).join(", ")}]; Chiến pháp [${pickRandomSample(CATALOG_CHIEN_PHAP, p.tier, 2).map((x) => x.name).join(", ")}]; Sinh vật [${pickRandomSample(MYTHIC_CREATURES, p.tier, 2).map((c) => c.name).join(", ")}].
-
-=== ÂM MƯU ẨN (KHÔNG TIẾT LỘ TRỰC TIẾP, CHỈ RẢI MANH MỐI) ===
-${hiddenTail}
-- Liên kết gốc: ${originEntity?.name || "Đạo Nguyên Chi Tổ"} — ${originEntity?.secret || "Càng tu cao càng lộ chân tướng vật chứa."}
-- Chỉ đạo Tác giả: ${state.authorDirectives || "Không."}
-
-=== QUY TẮC ===
-1. Dưới Hóa Thần tuyệt đối không viết dùng Thần Thức. Lồng ghép tông môn/thế gia/di tích/âm mưu/truyền công. ~15% lượt khám phá kích hoạt mode "ngodao" đặt câu hỏi triết học/vũ trụ.
-2. Combat: đặt mode "combat", điền \`enemy\` ngắn gọn (HP tham chiếu: Luyện Khí 100-1k+, Trúc Cơ 1k-5k, Kim Đan 5k-10k, Nguyên Anh 10k-50k, Hóa Thần+ 50k+). Giữ nguyên \`enemy.maxHp\` và kế thừa \`enemy.hp\` từ lượt trước; chỉ đặt \`maxHpChanged=true\` khi có skill trừ/buff/giải Max HP, \`hpHealed=true\` khi hồi máu. \`hp<=0\` -> \`mode="normal"\`, \`enemy=null\`.
-3. Tuân thủ kết quả xúc xắc/DMG từ Engine. Khi thất bại trước cường giả cao hơn -> trừ \`hpDelta\` cực nặng (có thể chết ngay).
-4. CẤM ĐỘT PHÁ MỒM: Lượt thường không viết đã đột phá cảnh giới và để \`realmUpdate=null\` (trừ kỳ ngộ truyền công/bị phế).
-5. \`potentialDelta\` mặc định 0 (chỉ thưởng khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp ≥80/100đ). Trang bị gắn \`slot\` (\`armor|weapon|accessory\`), \`statBonuses\`, \`armorBonus\`, \`resistBonus\`, \`effects\`.
-6. \`choices\` (3-4 lựa chọn) PHẢI bám sát hoàn cảnh & vật phẩm/kỹ năng thực tế đang có; \`statTag\` chỉ dùng: \`Căn cốt\`, \`Tâm trí\`, \`Linh hồn\`, \`Ngộ tính\`, \`Thiên phú\`, \`Khí vận\`.
-7. \`narrative\` tiếng Việt giàu hình ảnh, 160–280 chữ.`;
+  return `GM tiểu thuyết tương tác tiếng Việt. Văn phong:${world.styleRef}. Giọng:${state.tone}.
+[NHÂN VẬT] ${p.name} | ${p.originName} | Thể chất:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng:${p.goldenName}
+- ${tierInfo.short} | ${state.currentParallelRealm} | ${state.timeline || "Hiện Tại"}${state.isAfterlife ? " | ÂM GIỚI" : ""} | Cảnh giới:${p.realm} | Tuổi:${p.age}/${p.lifespan} | HP:${p.hp}/${p.maxHp} MP:${p.mp}/${p.maxMp} TuVi:${p.cultivation}%
+- Chỉ số: CănCốt ${p.stats.cancot}, TâmTrí ${p.stats.tamtin}, LinhHồn ${p.stats.linhhon}, NgộTính ${p.stats.ngotinh}, ThiênPhú ${p.stats.thienphu}, KhíVận ${p.stats.khivan}, CôngĐức ${p.stats.congduc}, Nghiệp ${p.stats.nghiepluc}, DanhVọng ${p.stats.danhvong} (MayMắn ${derived.effectiveLuck}, NhạyÂmMưu ${derived.conspiracySense}).
+- ThầnThức:${derived.hasDivineSense ? "CÓ" : "CHƯA CÓ(dưới Hóa Thần cấm dùng)"} | Giáp:${derived.baseArmor} | Kháng VL:${derived.effectiveResist.physical}% Phép:${derived.effectiveResist.magic}% Hồn:${derived.effectiveResist.soul}% Độc:${derived.effectiveResist.poison}% Luật:${derived.effectiveResist.law}% | TrangBị: Giáp[${p.defense?.equippedArmor || "0"}] VũKhí[${p.equipment?.weapon || "0"}] PK[${p.equipment?.accessory || "0"}]
+- KỹNăng: ${p.skills.slice(0, 6).map((s) => `${s.name}(B${s.tier}L${s.level})`).join("; ")}
+- TúiĐồ: ${p.inventory.slice(-6).map((i) => `${i.name}x${i.qty}`).join("; ")}
+- NhânMạch: ${p.relationships.slice(-5).map((r) => `${r.name}[${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- ĐỊCH(KHÓA maxHp): ${state.enemy.name}(${state.enemy.realm}) HP:${state.enemy.hp}/${state.enemy.maxHp} Ý:${state.enemy.intent || "Đánh"}` : ""}${catalogHint}
+[ÂM MƯU ẨN(CHỈ RẢI MANH MỐI)] ${hiddenTail} | Gốc:${originEntity?.name || "Đạo Nguyên"} | ChỉĐạo:${state.authorDirectives || "Không"}
+[LUẬT]
+1. Dưới Hóa Thần cấm viết dùng Thần Thức. Lồng ghép tông môn/di tích/âm mưu. ~15% lượt thường mở mode="ngodao" hỏi triết học/vũ trụ.
+2. Combat: mode="combat", enemy ngắn gọn (HP: LuyệnKhí 100-1k+, TrúcCơ 1k-5k, KimĐan 5k-10k, NguyênAnh 10k-50k, HóaThần+ 50k+). Giữ nguyên enemy.maxHp & kế thừa enemy.hp; chỉ đặt maxHpChanged=true khi buff/trừ/giải MaxHP, hpHealed=true khi hồi máu. hp<=0 -> mode="normal", enemy=null.
+3. Theo kết quả xúc xắc/DMG Engine; thua cường giả cao hơn trừ hpDelta cực nặng (có thể chết).
+4. Cấm đột phá mồm: lượt thường không viết đã đột phá & để realmUpdate=null (trừ truyền công/bị phế).
+5. potentialDelta mặc định 0 (chỉ cho khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp >=80đ). Trang bị gắn slot(armor|weapon|accessory).
+6. choices(3-4 mục) bám sát hoàn cảnh & đồ/skill thực tế; statTag chỉ dùng: Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận.
+7. narrative tiếng Việt súc tích, giàu hình ảnh, 110–190 chữ.`;
 }
 
 const DIRECT_MODEL_CACHE = new Map();
@@ -410,25 +404,7 @@ export function getActiveApiKey(settings = {}) {
   return (settings.apiKey || "").trim();
 }
 
-const OPENAI_JSON_FORMAT_HINT = `
-=== BẮT BUỘC TRẢ VỀ ĐÚNG 1 JSON OBJECT HỢP LỆ (KHÔNG MARKDOWN) ===
-{
-  "narrative": "string (diễn biến chi tiết bằng tiếng Việt)",
-  "mode": "normal | combat | ngodao",
-  "choices": [{ "text": "string", "statTag": "Căn cốt | Tâm trí | Linh hồn | Ngộ tính | Thiên phú | Khí vận", "risk": "Thấp | Trung bình | Cao" }],
-  "enemy": null | { "name": "string", "realm": "string", "hp": 100, "maxHp": 100, "maxHpChanged": false, "hpHealed": false, "intent": "string" },
-  "ngodaoQuestion": null | "string",
-  "stateChanges": {
-    "hpDelta": 0, "mpDelta": 0, "cultivationDelta": 0, "potentialDelta": 0, "ageDelta": 0,
-    "primaryCurrencyDelta": 0, "contribDelta": 0,
-    "statDeltas": {}, "armorDelta": 0, "resistDeltas": {},
-    "newItems": [], "newSkills": [], "relationshipUpdates": [],
-    "parallelRealm": null, "realmUpdate": null, "physiqueUpdate": null, "physiqueProgressDelta": 0,
-    "timelineUpdate": null, "newCausalAnchor": null, "systemAlert": null
-  },
-  "summaryUpdate": "string (1-2 câu tóm tắt lượt này)",
-  "hiddenNotesUpdate": "string (ghi chú âm mưu ẩn nếu có)"
-}`;
+const OPENAI_JSON_FORMAT_HINT = `Trả đúng 1 JSON object: {"narrative":"str","mode":"normal|combat|ngodao","choices":[{"text":"str","statTag":"Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận","risk":"Thấp|TB|Cao"}],"enemy":null|{"name":"str","realm":"str","hp":0,"maxHp":0,"maxHpChanged":false,"hpHealed":false,"intent":"str"},"ngodaoQuestion":null|"str","stateChanges":{"hpDelta":0,"mpDelta":0,"cultivationDelta":0,"potentialDelta":0,"ageDelta":0,"primaryCurrencyDelta":0,"contribDelta":0,"statDeltas":{},"armorDelta":0,"resistDeltas":{},"newItems":[],"newSkills":[],"relationshipUpdates":[],"parallelRealm":null,"realmUpdate":null,"physiqueUpdate":null,"physiqueProgressDelta":0,"timelineUpdate":null,"newCausalAnchor":null,"systemAlert":null},"summaryUpdate":"str","hiddenNotesUpdate":"str"}`;
 
 export async function listProviderModels(provider, apiKey) {
   if (provider === "groq") {
@@ -522,16 +498,16 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
   }
 
   const recentLogs = state.logs
-    .slice(-3)
+    .slice(-2)
     .map((l) => {
       const txt = String(l.text || "").replace(/\n\[AI:[^\]]+\]$/, "").trim();
-      const shortTxt = txt.length > 280 ? `${txt.slice(0, 280)}...` : txt;
-      return l.type === "player" ? `[Người chơi]: ${shortTxt}` : `[Diễn biến]: ${shortTxt}`;
+      const shortTxt = txt.length > 220 ? `${txt.slice(0, 220)}...` : txt;
+      return l.type === "player" ? `[P]: ${shortTxt}` : `[GM]: ${shortTxt}`;
     })
     .join("\n");
 
-  const summaryTail = String(state.storySummary || "").slice(-900);
-  const fullUserContent = `Tóm tắt cốt truyện:\n${summaryTail}\n\nGần nhất:\n${recentLogs || "(Mới bắt đầu)"}\n\nLượt này:\n${userPrompt}`;
+  const summaryTail = String(state.storySummary || "").slice(-600);
+  const fullUserContent = `Tóm tắt:\n${summaryTail}\n\nGần nhất:\n${recentLogs || "(Mới)"}\n\nLượt này:\n${userPrompt}`;
 
   let parsed;
   let modelUsed = "";
