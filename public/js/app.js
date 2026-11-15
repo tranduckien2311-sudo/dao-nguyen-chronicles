@@ -222,6 +222,11 @@ function renderTabs() {
     btn.addEventListener("click", () => {
       const k = btn.dataset.stat;
       if (state.player.potentialPoints <= 0) return;
+      const isSoulForm = Boolean(state.isAfterlife && state.afterlifeForm !== "ghost_body");
+      if (isSoulForm && k === "cancot") {
+        alert("Đang ở trạng thái Hồn Thể (chưa có thân xác), Căn cốt cố định 0! Tu thành Quỷ Thể để khôi phục.");
+        return;
+      }
       state.player.potentialPoints -= 1;
       state.player.stats[k] += 1;
       if (k === "cancot") {
@@ -235,6 +240,10 @@ function renderTabs() {
       if (k === "linhhon") {
         state.player.maxMp += 6;
         state.player.mp += 6;
+      }
+      if (isSoulForm) {
+        state.player.maxHp = state.player.maxMp;
+        state.player.hp = state.player.mp;
       }
       saveGameState(state);
       renderTopHud();
@@ -659,8 +668,15 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult =
 
   const sc = res.stateChanges || {};
   const p = state.player;
-  p.hp = Math.max(0, Math.min(p.maxHp, p.hp + (sc.hpDelta || 0)));
-  p.mp = Math.max(0, Math.min(p.maxMp, p.mp + (sc.mpDelta || 0)));
+  const isSoulForm = Boolean(state.isAfterlife && state.afterlifeForm !== "ghost_body");
+  if (isSoulForm) {
+    p.mp = Math.max(0, Math.min(p.maxMp, p.mp + (sc.hpDelta || 0) + (sc.mpDelta || 0)));
+    p.maxHp = p.maxMp;
+    p.hp = p.mp;
+  } else {
+    p.hp = Math.max(0, Math.min(p.maxHp, p.hp + (sc.hpDelta || 0)));
+    p.mp = Math.max(0, Math.min(p.maxMp, p.mp + (sc.mpDelta || 0)));
+  }
   p.cultivation = Math.max(0, Math.min(100, p.cultivation + (sc.cultivationDelta || 0)));
   p.potentialPoints = Math.max(0, p.potentialPoints + (sc.potentialDelta || 0));
   p.age += sc.ageDelta || 0;
@@ -669,7 +685,10 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult =
 
   if (sc.statDeltas) {
     for (const [k, v] of Object.entries(sc.statDeltas)) {
-      if (k in p.stats && v) p.stats[k] += v;
+      if (k in p.stats && v) {
+        if (isSoulForm && k === "cancot") continue;
+        p.stats[k] += v;
+      }
     }
   }
   if (sc.armorDelta || sc.resistDeltas) {
@@ -726,6 +745,21 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult =
     }
     p.physiqueProgress = 0;
     syncPhysiqueTierAbilities(p);
+  }
+  if (
+    state.isAfterlife &&
+    state.afterlifeForm !== "ghost_body" &&
+    (sc.afterlifeFormUpdate === "ghost_body" ||
+      /quỷ thể|tái tạo nhục thân|quỷ khu|âm thần thể/i.test(`${sc.physiqueUpdate || ""} ${sc.realmUpdate || ""}`))
+  ) {
+    state.afterlifeForm = "ghost_body";
+    p.stats.cancot = Math.max(p.stats.cancot || 0, p.savedCancotBeforeDeath || 8);
+    syncRealmVitals(state, true);
+    state.logs.push({
+      type: "system",
+      title: "💀 TU THÀNH QUỶ THỂ",
+      text: `Đã ngưng tụ thân xác âm giới! Căn cốt (${p.stats.cancot}) được khôi phục, Sinh Lực tách khỏi Linh Lực.`,
+    });
   }
   if (sc.realmUpdate && sc.realmUpdate !== p.realm) {
     const oldLv = getContinuousLevel(state);
@@ -807,8 +841,14 @@ function applyLevelUpRewards(targetState) {
   const bonusPoints = Math.max(1, lv * p.tier);
   p.potentialPoints += bonusPoints;
 
-  const { current: curPhysique, effectiveBonus: phyBonusObj } = getPhysiqueInfo(p);
   const phyGainLogs = [];
+  if (targetState.isAfterlife && targetState.afterlifeForm !== "ghost_body") {
+    const soulBonus = Math.max(1, Math.round((lv * p.tier) / 2));
+    p.stats.linhhon += soulBonus;
+    p.stats.cancot = 0;
+    phyGainLogs.push(`+${soulBonus} Linh Hồn (Hồn Thể)`);
+  }
+  const { current: curPhysique, effectiveBonus: phyBonusObj } = getPhysiqueInfo(p);
   if (curPhysique && curPhysique.id !== "phamthe" && phyBonusObj) {
     for (const [bk, bv] of Object.entries(phyBonusObj)) {
       if (typeof bv !== "number" || bv === 0) continue;

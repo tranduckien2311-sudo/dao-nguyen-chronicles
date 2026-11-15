@@ -703,17 +703,22 @@ export function syncPhysiqueTierAbilities(player) {
 export function enterAfterlife(state) {
   const world = WORLD_PRESETS[state.worldId];
   state.isAfterlife = true;
+  state.afterlifeForm = "soul";
   state.afterlifeRealmIndex = 0;
   state.currentParallelRealm = world.afterlife.name;
   state.player.realm = world.afterlife.realms[0];
-  state.player.hp = Math.max(50, Math.round(state.player.maxHp * 0.6));
+  state.player.savedCancotBeforeDeath = state.player.stats.cancot || 0;
+  state.player.stats.cancot = 0;
+  syncRealmVitals(state, false);
   state.player.mp = Math.max(50, Math.round(state.player.maxMp * 0.8));
+  state.player.hp = state.player.mp;
+  state.player.maxHp = state.player.maxMp;
   state.mode = "normal";
   state.enemy = null;
   state.logs.push({
     type: "system",
     title: `LINH HỒN RỚT XUỐNG ${world.afterlife.name.toUpperCase()}`,
-    text: `Nhục thân đã hủy, nhưng Linh Hồn (${state.player.stats.linhhon}) vẫn còn nguyên vẹn! Ngươi chuyển sang tu luyện Quỷ Đạo (${state.player.realm}). Hãy tìm cách tích lũy sức mạnh để Tái Tạo Nhục Thân hoặc Hoàn Dương Báo Thù!`,
+    text: `Nhục thân đã hủy (Căn cốt về 0, Sinh Lực tính bằng Linh Lực/Mana: ${state.player.mp}/${state.player.maxMp}), nhưng Linh Hồn (${state.player.stats.linhhon}) vẫn nguyên vẹn! Ngươi đang ở trạng thái **Hồn Thể** (${state.player.realm}): mỗi lần lên cấp Linh Hồn tăng thêm +(lv×tầng/2). Tu thành **Quỷ Thể** sẽ khôi phục lại Căn cốt!`,
   });
 }
 
@@ -839,18 +844,33 @@ export function computeRealmVitalsBaseline(state) {
 export function syncRealmVitals(state, healToFull = false) {
   const p = state?.player;
   if (!p) return false;
+  const isSoulForm = Boolean(state.isAfterlife && state.afterlifeForm !== "ghost_body");
+  if (isSoulForm && p.stats && p.stats.cancot !== 0) {
+    if (p.savedCancotBeforeDeath === undefined) {
+      p.savedCancotBeforeDeath = p.stats.cancot;
+    }
+    p.stats.cancot = 0;
+  }
   const baseline = computeRealmVitalsBaseline(state);
   let changed = false;
-  if ((p.maxHp || 0) < baseline.maxHp) {
-    const ratio = p.maxHp > 0 ? p.hp / p.maxHp : 1;
-    p.maxHp = baseline.maxHp;
-    p.hp = healToFull ? p.maxHp : Math.max(1, Math.min(p.maxHp, Math.round(p.maxHp * ratio)));
-    changed = true;
-  }
   if ((p.maxMp || 0) < baseline.maxMp) {
     const ratio = p.maxMp > 0 ? p.mp / p.maxMp : 1;
     p.maxMp = baseline.maxMp;
     p.mp = healToFull ? p.maxMp : Math.max(0, Math.min(p.maxMp, Math.round(p.maxMp * ratio)));
+    changed = true;
+  }
+  if (isSoulForm) {
+    if (p.maxHp !== p.maxMp || p.hp !== p.mp) {
+      p.maxHp = p.maxMp;
+      p.hp = healToFull ? p.maxMp : p.mp;
+      changed = true;
+    }
+    return changed;
+  }
+  if ((p.maxHp || 0) < baseline.maxHp) {
+    const ratio = p.maxHp > 0 ? p.hp / p.maxHp : 1;
+    p.maxHp = baseline.maxHp;
+    p.hp = healToFull ? p.maxHp : Math.max(1, Math.min(p.maxHp, Math.round(p.maxHp * ratio)));
     changed = true;
   }
   return changed;

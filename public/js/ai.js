@@ -174,6 +174,7 @@ const RESPONSE_SCHEMA = {
         parallelRealm: { type: "STRING", nullable: true },
         realmUpdate: { type: "STRING", nullable: true },
         physiqueUpdate: { type: "STRING", nullable: true },
+        afterlifeFormUpdate: { type: "STRING", nullable: true },
         physiqueProgressDelta: { type: "INTEGER" },
         timelineUpdate: { type: "STRING", nullable: true },
         newCausalAnchor: { type: "STRING", nullable: true },
@@ -207,7 +208,7 @@ export function buildSystemPrompt(state) {
 
   return `GM tiểu thuyết tương tác tiếng Việt. Văn phong:${world.styleRef}. Giọng:${state.tone}.
 [NHÂN VẬT] ${p.name} | ${p.originName} | Thể chất:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng:${p.goldenName}
-- ${tierInfo.short} | ${state.currentParallelRealm} | ${state.timeline || "Hiện Tại"}${state.isAfterlife ? " | ÂM GIỚI" : ""} | Cảnh giới:${p.realm} | Tuổi:${p.age}/${p.lifespan} | HP:${p.hp}/${p.maxHp} MP:${p.mp}/${p.maxMp} TuVi:${p.cultivation}%
+- ${tierInfo.short} | ${state.currentParallelRealm} | ${state.timeline || "Hiện Tại"}${state.isAfterlife ? (state.afterlifeForm === "ghost_body" ? " | ÂM GIỚI(QUỶ THỂ)" : " | ÂM GIỚI(HỒN THỂ: CănCốt=0, HP=Mana)") : ""} | Cảnh giới:${p.realm} | Tuổi:${p.age}/${p.lifespan} | HP:${p.hp}/${p.maxHp} MP:${p.mp}/${p.maxMp} TuVi:${p.cultivation}%
 - Chỉ số: CănCốt ${p.stats.cancot}, TâmTrí ${p.stats.tamtin}, LinhHồn ${p.stats.linhhon}, NgộTính ${p.stats.ngotinh}, ThiênPhú ${p.stats.thienphu}, KhíVận ${p.stats.khivan}, CôngĐức ${p.stats.congduc}, Nghiệp ${p.stats.nghiepluc}, DanhVọng ${p.stats.danhvong} (MayMắn ${derived.effectiveLuck}, NhạyÂmMưu ${derived.conspiracySense}).
 - ThầnThức:${derived.hasDivineSense ? "CÓ" : "CHƯA CÓ(dưới Hóa Thần cấm dùng)"} | Giáp:${derived.baseArmor} | Kháng VL:${derived.effectiveResist.physical}% Phép:${derived.effectiveResist.magic}% Hồn:${derived.effectiveResist.soul}% Độc:${derived.effectiveResist.poison}% Luật:${derived.effectiveResist.law}% | TrangBị: Giáp[${p.defense?.equippedArmor || "0"}] VũKhí[${p.equipment?.weapon || "0"}] PK[${p.equipment?.accessory || "0"}]
 - KỹNăng: ${p.skills.slice(0, 6).map((s) => `${s.name}(B${s.tier}L${s.level})`).join("; ")}
@@ -404,7 +405,7 @@ export function getActiveApiKey(settings = {}) {
   return (settings.apiKey || "").trim();
 }
 
-const OPENAI_JSON_FORMAT_HINT = `Trả đúng 1 JSON object: {"narrative":"str","mode":"normal|combat|ngodao","choices":[{"text":"str","statTag":"Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận","risk":"Thấp|TB|Cao"}],"enemy":null|{"name":"str","realm":"str","hp":0,"maxHp":0,"maxHpChanged":false,"hpHealed":false,"intent":"str"},"ngodaoQuestion":null|"str","stateChanges":{"hpDelta":0,"mpDelta":0,"cultivationDelta":0,"potentialDelta":0,"ageDelta":0,"primaryCurrencyDelta":0,"contribDelta":0,"statDeltas":{},"armorDelta":0,"resistDeltas":{},"newItems":[],"newSkills":[],"relationshipUpdates":[],"parallelRealm":null,"realmUpdate":null,"physiqueUpdate":null,"physiqueProgressDelta":0,"timelineUpdate":null,"newCausalAnchor":null,"systemAlert":null},"summaryUpdate":"str","hiddenNotesUpdate":"str"}`;
+const OPENAI_JSON_FORMAT_HINT = `Trả đúng 1 JSON object: {"narrative":"str","mode":"normal|combat|ngodao","choices":[{"text":"str","statTag":"Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận","risk":"Thấp|TB|Cao"}],"enemy":null|{"name":"str","realm":"str","hp":0,"maxHp":0,"maxHpChanged":false,"hpHealed":false,"intent":"str"},"ngodaoQuestion":null|"str","stateChanges":{"hpDelta":0,"mpDelta":0,"cultivationDelta":0,"potentialDelta":0,"ageDelta":0,"primaryCurrencyDelta":0,"contribDelta":0,"statDeltas":{},"armorDelta":0,"resistDeltas":{},"newItems":[],"newSkills":[],"relationshipUpdates":[],"parallelRealm":null,"realmUpdate":null,"physiqueUpdate":null,"afterlifeFormUpdate":null,"physiqueProgressDelta":0,"timelineUpdate":null,"newCausalAnchor":null,"systemAlert":null},"summaryUpdate":"str","hiddenNotesUpdate":"str"}`;
 
 export async function listProviderModels(provider, apiKey) {
   if (provider === "groq") {
