@@ -221,7 +221,7 @@ export function buildSystemPrompt(state) {
 4. Cấm đột phá mồm: lượt thường không viết đã đột phá & để realmUpdate=null (trừ truyền công/bị phế).
 5. potentialDelta mặc định 0 (chỉ cho khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp >=80đ). Trang bị gắn slot(armor|weapon|accessory).
 6. choices(3-4 mục) bám sát hoàn cảnh & đồ/skill thực tế; statTag chỉ dùng: Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận.
-7. narrative tiếng Việt súc tích, giàu hình ảnh, 110–190 chữ.`;
+7. narrative tiếng Việt CỰC NGẮN GỌN (40–80 chữ), chỉ nêu thẳng ý chính, diễn biến & kết quả, KHÔNG hành văn dài dòng. summaryUpdate ≤15 chữ.`;
 }
 
 const DIRECT_MODEL_CACHE = new Map();
@@ -501,7 +501,7 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
     .slice(-2)
     .map((l) => {
       const txt = String(l.text || "").replace(/\n\[AI:[^\]]+\]$/, "").trim();
-      const shortTxt = txt.length > 220 ? `${txt.slice(0, 220)}...` : txt;
+      const shortTxt = txt.length > 140 ? `${txt.slice(0, 140)}...` : txt;
       return l.type === "player" ? `[P]: ${shortTxt}` : `[GM]: ${shortTxt}`;
     })
     .join("\n");
