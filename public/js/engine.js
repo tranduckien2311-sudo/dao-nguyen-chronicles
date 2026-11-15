@@ -274,7 +274,7 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   if (buildId === "phaptu") baseStats.tamtin += 5;
   if (buildId === "hontu" || buildId === "phapbao" || buildId === "nguthu") baseStats.linhhon += 5;
   if (buildId === "daotu") baseStats.ngotinh += 5;
-  if (build.id?.startsWith("d2_") && build.startBonus) {
+  if (!["thetu", "phaptu", "hontu", "phapbao", "nguthu", "daotu"].includes(buildId) && build.startBonus) {
     for (const [k, v] of Object.entries(build.startBonus)) {
       if (k in baseStats) baseStats[k] += v;
     }
