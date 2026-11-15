@@ -242,19 +242,62 @@ export function computeDerivedStats(player, lv = null) {
   };
 }
 
-export function createNewGame({ name, worldId, originId, goldenId, buildId, physiqueId, profession }) {
+export function rollOriginByDice() {
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const origin = ORIGINS.find((o) => d20 >= (o.rollMin ?? 1) && d20 <= (o.rollMax ?? 20)) || ORIGINS[0];
+  return { d20, origin };
+}
+
+export function rollGoldenFingerByDice() {
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const golden = GOLDEN_FINGERS.find((g) => d20 >= (g.rollMin ?? 1) && d20 <= (g.rollMax ?? 20)) || GOLDEN_FINGERS[0];
+  return { d20, golden };
+}
+
+export function choosePlayerClass(state, buildId) {
+  const p = state?.player;
+  if (!p || !buildId) return null;
+  const build = WESTERN_CLASSES.find((b) => b.id === buildId) || BUILD_PATHS.find((b) => b.id === buildId);
+  if (!build) return null;
+  p.buildId = build.id;
+  if (buildId === "thetu") p.stats.cancot += 5;
+  else if (buildId === "phaptu") p.stats.tamtin += 5;
+  else if (buildId === "hontu" || buildId === "phapbao" || buildId === "nguthu") p.stats.linhhon += 5;
+  else if (buildId === "daotu") p.stats.ngotinh += 5;
+  else if (build.startBonus) {
+    for (const [k, v] of Object.entries(build.startBonus)) {
+      if (k in p.stats) p.stats[k] += v;
+    }
+  }
+  if (build.startSkill && !p.skills.some((s) => s.name === build.startSkill.name)) {
+    p.skills.unshift(structuredClone(build.startSkill));
+  }
+  syncRealmVitals(state, false);
+  return build;
+}
+
+export function choosePlayerProfession(state, profName) {
+  const p = state?.player;
+  if (!p || !profName) return false;
+  if (!Array.isArray(p.professions)) p.professions = [];
+  if (p.professions.some((pr) => pr.name === profName)) return false;
+  p.professions.push({ name: profName, level: 1, rank: "Nhất Phẩm Học Đồ", exp: 0 });
+  return true;
+}
+
+export function createNewGame({ name, worldId, originId, goldenId, buildId = null, physiqueId = null, profession = null }) {
   const world = WORLD_PRESETS[worldId];
   const origin = ORIGINS.find((o) => o.id === originId) || ORIGINS[0];
   const golden = GOLDEN_FINGERS.find((g) => g.id === goldenId) || GOLDEN_FINGERS[0];
   const isWest = worldId === "maphap";
-  const build =
-    WESTERN_CLASSES.find((b) => b.id === buildId) ||
-    BUILD_PATHS.find((b) => b.id === buildId) ||
-    (isWest ? WESTERN_CLASSES[0] : BUILD_PATHS[0]);
+  const build = buildId
+    ? WESTERN_CLASSES.find((b) => b.id === buildId) || BUILD_PATHS.find((b) => b.id === buildId) || null
+    : null;
   const physique =
-    PHYSIQUES.find((ph) => ph.id === physiqueId) ||
-    WESTERN_BLOODLINES.find((ph) => ph.id === physiqueId) ||
-    CATALOG_PHYSIQUES.find((ph) => ph.id === physiqueId) ||
+    (physiqueId &&
+      (PHYSIQUES.find((ph) => ph.id === physiqueId) ||
+        WESTERN_BLOODLINES.find((ph) => ph.id === physiqueId) ||
+        CATALOG_PHYSIQUES.find((ph) => ph.id === physiqueId))) ||
     (isWest ? WESTERN_BLOODLINES[0] : PHYSIQUES[0]);
 
   const baseStats = {
@@ -270,13 +313,15 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
     danhvong: 5,
   };
 
-  if (buildId === "thetu") baseStats.cancot += 5;
-  if (buildId === "phaptu") baseStats.tamtin += 5;
-  if (buildId === "hontu" || buildId === "phapbao" || buildId === "nguthu") baseStats.linhhon += 5;
-  if (buildId === "daotu") baseStats.ngotinh += 5;
-  if (!["thetu", "phaptu", "hontu", "phapbao", "nguthu", "daotu"].includes(buildId) && build.startBonus) {
-    for (const [k, v] of Object.entries(build.startBonus)) {
-      if (k in baseStats) baseStats[k] += v;
+  if (build) {
+    if (buildId === "thetu") baseStats.cancot += 5;
+    if (buildId === "phaptu") baseStats.tamtin += 5;
+    if (buildId === "hontu" || buildId === "phapbao" || buildId === "nguthu") baseStats.linhhon += 5;
+    if (buildId === "daotu") baseStats.ngotinh += 5;
+    if (!["thetu", "phaptu", "hontu", "phapbao", "nguthu", "daotu"].includes(buildId) && build.startBonus) {
+      for (const [k, v] of Object.entries(build.startBonus)) {
+        if (k in baseStats) baseStats[k] += v;
+      }
     }
   }
 
@@ -290,8 +335,8 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
     if (k in baseStats) baseStats[k] += v;
   }
 
-  const maxHp = Math.round((100 + baseStats.cancot * 12) * (build.hpMult || 1));
-  const maxMp = Math.round((80 + baseStats.tamtin * 10 + baseStats.linhhon * 6) * (build.mpMult || 1));
+  const maxHp = Math.round((100 + baseStats.cancot * 12) * (build?.hpMult || 1));
+  const maxMp = Math.round((80 + baseStats.tamtin * 10 + baseStats.linhhon * 6) * (build?.mpMult || 1));
 
   const starterArmor = isWest
     ? {
@@ -328,7 +373,7 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
   }
 
   const skills = structuredClone(world.defaultSkills);
-  if (build.startSkill) {
+  if (build?.startSkill) {
     skills.unshift(structuredClone(build.startSkill));
   }
   const gSkill = isWest ? golden.westStartSkill || golden.startSkill : golden.startSkill;
@@ -336,17 +381,36 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
     skills.unshift(structuredClone(gSkill));
   }
 
+  const originLabel = isWest && origin.westName ? origin.westName : origin.name;
+  const goldenLabel = isWest && golden.westName ? golden.westName : golden.name;
   const seed = world.conspiracySeeds[Math.floor(Math.random() * world.conspiracySeeds.length)];
   const hiddenNotes = [
     `Âm mưu nhánh thế giới: ${seed}`,
-    `Bí mật xuất thân (${origin.name}): ${origin.secretHook}`,
-    `Cái giá Bàn Tay Vàng (${golden.name}): ${golden.hiddenCost}`,
+    `Bí mật xuất thân (${originLabel}): ${origin.secretHook}`,
+    `Cái giá Bàn Tay Vàng (${goldenLabel}): ${golden.hiddenCost}`,
   ].join("\n");
 
   const currencies = {};
   for (const c of world.currencies) {
     currencies[c.key] = c.start;
   }
+
+  const initialRel =
+    origin.id === "ngoai_mon_tap_dich"
+      ? {
+          name: worldId === "tutien" ? "Thanh Vân Tông (Ngoại Môn Tạp Dịch)" : worldId === "maphap" ? "Tháp Pháp Sư Sơ Cấp (Tạp Dịch)" : "Trạm Thực Tập Tinh Hệ 09",
+          type: "Sư Môn / Tổ Chức",
+          affinity: 20,
+          loyalty: 40,
+          status: "Tạp dịch mới vào",
+        }
+      : {
+          name: origin.id === "co_nhi_lang_thang" ? "Khu Chợ Trấn Nhỏ" : "Láng Giềng & Thôn Xóm Quê Nhà",
+          type: "Địa Phương / Gia Đình",
+          affinity: origin.id === "co_nhi_lang_thang" ? 10 : 35,
+          loyalty: 30,
+          status: origin.id === "co_nhi_lang_thang" ? "Người qua đường" : "Người quen thuở nhỏ",
+        };
 
   const newState = {
     id: `run_${Date.now()}`,
@@ -360,11 +424,11 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
     causalAnchors: [],
     player: {
       name: name.trim() || "Lâm Phong",
-      originId,
-      originName: origin.name,
-      goldenId,
-      goldenName: golden.name,
-      buildId,
+      originId: origin.id,
+      originName: originLabel,
+      goldenId: golden.id,
+      goldenName: goldenLabel,
+      buildId: build ? build.id : null,
       physiqueId: physique.id,
       physiqueName: physique.name,
       physiqueGroup: physique.group,
@@ -378,7 +442,7 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
       tier: 1,
       realmIndex: 0,
       realm: world.realmsByTier[1][0],
-      age: 18,
+      age: origin.startAge || 14,
       lifespan: 120,
       hp: maxHp,
       maxHp,
@@ -398,24 +462,16 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId, phys
         accessory: null,
       },
       currencies,
-      professions: [{ name: profession, level: 1, rank: "Nhất Phẩm Học Đồ", exp: 0 }],
+      professions: profession ? [{ name: profession, level: 1, rank: "Nhất Phẩm Học Đồ", exp: 0 }] : [],
       skills,
       inventory,
-      relationships: [
-        {
-          name: worldId === "tutien" ? "Thanh Vân Tông (Ngoại Môn)" : worldId === "maphap" ? "Tháp Pháp Sư Sơ Cấp" : "Chi Nhánh Tinh Hệ 09",
-          type: "Sư Môn / Tổ Chức",
-          affinity: 30,
-          loyalty: 60,
-          status: "Thành viên mới",
-        },
-      ],
+      relationships: [initialRel],
     },
     enemy: null,
     ngodaoQuestion: null,
     choices: [],
     logs: [],
-    storySummary: `Khởi đầu tại ${world.name}, ${name.trim() || "Lâm Phong"} mang thân phận ${origin.name}.`,
+    storySummary: `Khởi đầu tại ${world.name}, ${name.trim() || "Lâm Phong"} (${origin.startAge || 14} tuổi) xuất thân từ ${originLabel}.`,
     hiddenNotes,
     authorDirectives: "",
     tone: "Cân não, chặt chẽ, phong cách tiểu thuyết mạng",

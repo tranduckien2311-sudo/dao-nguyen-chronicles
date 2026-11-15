@@ -1,4 +1,4 @@
-import { WORLD_PRESETS, COSMIC_TIERS, WESTERN_GRIMOIRES, WESTERN_SPELLS, WESTERN_ITEMS } from "./worlds.js";
+import { WORLD_PRESETS, COSMIC_TIERS, BUILD_PATHS, WESTERN_CLASSES, WESTERN_GRIMOIRES, WESTERN_SPELLS, WESTERN_ITEMS } from "./worlds.js";
 import { computeDerivedStats, getSkillStageDetails } from "./engine.js";
 import {
   ORIGIN_ENTITIES,
@@ -202,6 +202,11 @@ export function buildSystemPrompt(state) {
   const hiddenTail = String(state.hiddenNotes || "").slice(-450);
   const originEntity = ORIGIN_ENTITIES[p.physiqueGroup]?.[0];
   const isWest = state.worldId === "maphap";
+  const buildObj = p.buildId
+    ? WESTERN_CLASSES.find((b) => b.id === p.buildId) || BUILD_PATHS.find((b) => b.id === p.buildId)
+    : null;
+  const buildLabel = buildObj ? buildObj.name : "Chưa định hình (Chọn sau theo mạch truyện)";
+  const profLabel = p.professions?.length ? p.professions.map((pr) => pr.name).join(",") : "Chưa có (Chọn sau)";
   const catalogHint =
     state.mode === "normal"
       ? isWest
@@ -213,16 +218,16 @@ export function buildSystemPrompt(state) {
     : "";
 
   return `GM tiểu thuyết tương tác tiếng Việt. Văn phong:${world.styleRef}. Giọng:${state.tone}.
-[NHÂN VẬT] ${p.name} | ${p.originName} | Thể chất:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng:${p.goldenName}
+[NHÂN VẬT] ${p.name} | ${p.originName} | Class:${buildLabel} | Nghề:${profLabel} | Thể chất:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng:${p.goldenName}
 - ${tierInfo.short} | ${state.currentParallelRealm} | ${state.timeline || "Hiện Tại"}${state.isAfterlife ? (state.afterlifeForm === "ghost_body" ? " | ÂM GIỚI(QUỶ THỂ)" : " | ÂM GIỚI(HỒN THỂ: CănCốt=0, HP=Mana)") : ""} | Cảnh giới:${p.realm} | Tuổi:${p.age}/${p.lifespan} | HP:${p.hp}/${p.maxHp} MP:${p.mp}/${p.maxMp} TuVi:${p.cultivation}%
 - Chỉ số: CănCốt ${p.stats.cancot}, TâmTrí ${p.stats.tamtin}, LinhHồn ${p.stats.linhhon}, NgộTính ${p.stats.ngotinh}, ThiênPhú ${p.stats.thienphu}, KhíVận ${p.stats.khivan}, CôngĐức ${p.stats.congduc}, Nghiệp ${p.stats.nghiepluc}, DanhVọng ${p.stats.danhvong} (MayMắn ${derived.effectiveLuck}, NhạyÂmMưu ${derived.conspiracySense}).
 - ThầnThức:${derived.hasDivineSense ? "CÓ" : "CHƯA CÓ(dưới Hóa Thần cấm dùng)"} | Giáp:${derived.baseArmor} | Kháng VL:${derived.effectiveResist.physical}% Phép:${derived.effectiveResist.magic}% Hồn:${derived.effectiveResist.soul}% Độc:${derived.effectiveResist.poison}% Luật:${derived.effectiveResist.law}% | TrangBị: Giáp[${p.defense?.equippedArmor || "0"}] VũKhí[${p.equipment?.weapon || "0"}] PK[${p.equipment?.accessory || "0"}]
 - KỹNăng: ${p.skills.slice(0, 6).map((s) => `${s.name}(B${s.tier}L${s.level})`).join("; ")}
 - TúiĐồ: ${p.inventory.slice(-6).map((i) => `${i.name}x${i.qty}`).join("; ")}
 - NhânMạch: ${p.relationships.slice(-5).map((r) => `${r.name}[${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- ĐỊCH(KHÓA maxHp): ${state.enemy.name}(${state.enemy.realm}) HP:${state.enemy.hp}/${state.enemy.maxHp} Ý:${state.enemy.intent || "Đánh"}` : ""}${catalogHint}
-[ÂM MƯU ẨN(CHỈ RẢI MANH MỐI)] ${hiddenTail} | Gốc:${originEntity?.name || "Đạo Nguyên"} | ChỉĐạo:${state.authorDirectives || "Không"}
+[BỐI CẢNH ẨN(CHỈ RẢI MANH MỐI)] ${hiddenTail} | Gốc:${originEntity?.name || "Đạo Nguyên"} | ChỉĐạo:${state.authorDirectives || "Không"}
 [LUẬT]
-1. Người chơi KHÔNG phải nhân vật chính hay thiên kiêu! Thế giới cực tàn khốc: thường xuyên cài cắm hãm hại, đâm sau lưng, hạ độc, hấp tinh/hút tu vi, sập bẫy trận pháp, cướp đoạt. Dưới Hóa Thần cấm dùng Thần Thức. ~15% lượt thường mở mode="ngodao" hỏi triết học/vũ trụ.
+1. Mạch truyện đi TỪ NHỎ ĐẾN LỚN, TỪ YẾU ĐẾN MẠNH, chuyện nhỏ tăng dần (sinh hoạt quê nhà/thôn xóm/tạp dịch, mâu thuẫn nhỏ nhặt, kiếm kế sinh nhai... tuyệt đối KHÔNG nhảy cóc đại chiến hay biến cố cấp cao khi còn yếu). Người chơi KHÔNG phải nhân vật chính hay thiên kiêu! Thế giới tàn khốc: có hãm hại, đâm sau lưng, hạ độc, hấp tinh/hút tu vi, sập bẫy, cướp đoạt. Nếu chưa chọn Class/Nghề hoặc còn Phàm Thể, dẫn dắt tự nhiên qua bái sư/học viện/công pháp/kì ngộ để sau này mới định hình (chỉ đổi physiqueUpdate khi luyện công pháp đặc thù hoặc gặp kì ngộ lớn). Dưới Hóa Thần cấm dùng Thần Thức. ~15% lượt thường mở mode="ngodao".
 2. Combat: mode="combat", enemy ngắn gọn (HP: LuyệnKhí 100-1k+, TrúcCơ 1k-5k, KimĐan 5k-10k, NguyênAnh 10k-50k, HóaThần+ 50k+). Giữ nguyên enemy.maxHp & kế thừa enemy.hp; chỉ đặt maxHpChanged=true khi buff/trừ/giải MaxHP, hpHealed=true khi hồi máu. hp<=0 -> mode="normal", enemy=null.
 3. Theo kết quả xúc xắc/DMG Engine; KHÔNG biến câu chữ hành động thành tên chiêu thức. Giữ chặt đẳng cấp cảnh giới (Luyện Khí T1 DMG ~20-80). Khi xúc xắc Thất Bại/Đại Thất Bại -> BẮT BUỘC cho trúng bẫy, hạ độc, bị hấp tinh hút tu vi (cultivationDelta âm), bị hãm hại hoặc trọng thương, KHÔNG ưu ái cứu vãn. Nếu text nhảm/vô nghĩa/không hợp ngữ cảnh/tự bịa cơ duyên (vd bí kíp rơi từ trời) -> giáng Thiên Phạt (trừ 50-100% HP, không thưởng). Nếu tìm chết/thua cường giả -> viết rõ bối cảnh bị nhìn thấu, một chưởng đánh chết, vạn kiếm xuyên tâm... rồi đặt hpDelta=-999999.
 4. Cấm đột phá mồm: lượt thường không viết đã đột phá & để realmUpdate=null (trừ truyền công/bị phế).

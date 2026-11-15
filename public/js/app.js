@@ -44,6 +44,10 @@ import {
   syncRealmVitals,
   getSkillStageDetails,
   applySkillLevelUpRewards,
+  rollOriginByDice,
+  rollGoldenFingerByDice,
+  choosePlayerClass,
+  choosePlayerProfession,
   pushSnapshot,
   exportNovelMarkdown,
 } from "./engine.js";
@@ -189,10 +193,19 @@ function renderTabs() {
     .map(([k, v]) => `+${v} ${k}`)
     .join(", ");
 
+  const currentBuild = p.buildId
+    ? WESTERN_CLASSES.find((b) => b.id === p.buildId) || BUILD_PATHS.find((b) => b.id === p.buildId)
+    : null;
+  const isMortalBody = p.physiqueId === "phamthe" || p.physiqueId === "wb_human";
+
   $("tab-stats").innerHTML = `
     <div class="list-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
-      <span>Thể chất: <strong style="color:var(--accent)">${escapeHtml(p.physiqueName || "Phàm Thể")}</strong> (${phyProg}%)</span>
+      <span>Thể chất: <strong style="color:var(--accent)">${escapeHtml(p.physiqueName || "Phàm Thể")}</strong> (${phyProg}%)${isMortalBody ? " <em style='font-size:10px;color:var(--muted);'>(Hình thành sau qua công pháp & kì ngộ)</em>" : ""}</span>
       <span>Điểm Tiềm Năng: <strong style="color:var(--accent)">${p.potentialPoints}</strong></span>
+      <div style="width:100%;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);">
+        <span>${isWest ? "Class / Chức Nghiệp" : "Hướng Đạo / Class"}: <strong style="color:var(--text)">${currentBuild ? escapeHtml(currentBuild.name) : "Chưa định hình (Chọn sau theo mạch truyện)"}</strong></span>
+        ${!currentBuild ? `<button id="btn-choose-class" class="mini-btn">⚔️ Chọn Class</button>` : ""}
+      </div>
       ${phyBonusText ? `<span style="color:var(--muted);width:100%;font-size:10.5px;">Điểm gốc thể chất (mỗi lần lên Lv × Tầng): <strong style="color:var(--accent)">${phyBonusText}</strong></span>` : ""}
       ${
         phyInfo.nextName
@@ -248,6 +261,7 @@ function renderTabs() {
   `;
 
   $("btn-evolve-physique")?.addEventListener("click", handleEvolvePhysique);
+  $("btn-choose-class")?.addEventListener("click", openChooseClassModal);
 
   $("tab-stats").querySelectorAll(".stat-plus").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -340,16 +354,23 @@ function renderTabs() {
       <button id="btn-absorb-stone" class="mini-btn">✨ Hấp Thụ Hồi Khí</button>
     </div>
     <div class="list-card">
-      <div class="list-card-head"><span>🛠 Nghề Nghiệp (Bách Nghệ)</span></div>
-      ${p.professions
-        .map(
-          (pr) => `
+      <div class="list-card-head">
+        <span>🛠 Nghề Nghiệp (Bách Nghệ)</span>
+        <button id="btn-choose-prof" class="mini-btn">➕ Chọn Nghề</button>
+      </div>
+      ${
+        p.professions?.length
+          ? p.professions
+              .map(
+                (pr) => `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
           <span>${pr.name} (${pr.rank} - Lv.${pr.level})</span>
           <button class="mini-btn btn-use-prof" data-prof="${pr.name}">Thi triển</button>
         </div>`
-        )
-        .join("")}
+              )
+              .join("")
+          : `<div style="font-size:10.5px;color:var(--muted);margin-top:4px;">Chưa có nghề nghiệp — sẽ học/chọn sau khi có cơ duyên trong mạch truyện.</div>`
+      }
     </div>
     <div class="list-card">
       <div class="list-card-head"><span>🎒 Trang Bị Đang Mặc</span></div>
@@ -388,6 +409,7 @@ function renderTabs() {
       .join("")}
   `;
 
+  $("btn-choose-prof")?.addEventListener("click", openChooseProfessionModal);
   $("btn-absorb-stone")?.addEventListener("click", () => {
     if ((state.player.currencies.primary || 0) < 10) {
       alert("Không đủ tài nguyên (cần ít nhất 10).");
@@ -1052,8 +1074,13 @@ async function handleEvolveSkill(idx) {
 // MODALS
 function openNewGameModal() {
   const modal = $("modal-newgame");
+  const titleEl = modal.querySelector(".modal-header h3");
+  if (titleEl) titleEl.textContent = "✨ Khởi Tạo Nhân Vật & Nhánh Thế Giới";
   modal.classList.remove("hidden");
   const body = $("newgame-body");
+
+  let rolledOrigin = rollOriginByDice();
+  let rolledGolden = rollGoldenFingerByDice();
 
   body.innerHTML = `
     <div class="field-group">
@@ -1069,72 +1096,68 @@ function openNewGameModal() {
       </select>
     </div>
     <div class="field-group">
-      <label>Xuất Thân</label>
-      <select id="ng-origin">
-        ${ORIGINS.map((o) => `<option value="${o.id}">${o.name}</option>`).join("")}
-      </select>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <label style="margin:0;">Xuất Thân Khởi Đầu (Gieo Xúc Xắc)</label>
+        <button id="btn-roll-origin" type="button" class="mini-btn">🎲 Gieo Lại</button>
+      </div>
+      <div id="ng-origin-result" class="list-card" style="margin:0;padding:8px;"></div>
     </div>
     <div class="field-group">
-      <label>Bàn Tay Vàng (Lưu ý: Đều có cái giá & âm mưu ẩn!)</label>
-      <select id="ng-golden">
-        ${GOLDEN_FINGERS.map((g) => `<option value="${g.id}">${g.name}</option>`).join("")}
-      </select>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <label id="lbl-ng-golden" style="margin:0;">Bàn Tay Vàng (Gieo Xúc Xắc Ngẫu Nhiên)</label>
+        <button id="btn-roll-golden" type="button" class="mini-btn">🎲 Gieo Lại</button>
+      </div>
+      <div id="ng-golden-result" class="list-card" style="margin:0;padding:8px;"></div>
     </div>
-    <div class="field-group">
-      <label>Hướng Build Chủ Đạo</label>
-      <select id="ng-build">
-        ${BUILD_PATHS.map((b) => `<option value="${b.id}">${b.name}</option>`).join("")}
-      </select>
-    </div>
-    <div class="field-group">
-      <label>Thể Chất (Chọn từ 100 Thể Chất hoặc Phàm Thể)</label>
-      <select id="ng-physique">
-        ${PHYSIQUES.map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group}] — ${ph.desc}</option>`).join("")}
-        ${CATALOG_PHYSIQUES.filter((ph) => ph.tier === 1).map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group} • ${ph.grade}]</option>`).join("")}
-      </select>
-    </div>
-    <div class="field-group">
-      <label>Nghề Nghiệp Khởi Đầu (Bách Nghệ)</label>
-      <select id="ng-prof"></select>
+    <div class="list-card" style="font-size:11px;color:var(--muted);margin-bottom:10px;">
+      🌱 <strong>Khởi đầu Phàm Nhân:</strong> Class (Hướng Đạo), Nghề Nghiệp và Thể Chất sẽ <strong>không chọn từ đầu</strong> — nhân vật đi từ nhỏ đến lớn, từ yếu đến mạnh, tự định hình qua công pháp, sư môn và kì ngộ sau này.
     </div>
     <button id="btn-start-run" class="btn-primary">🚀 Bắt Đầu Hành Trình</button>
   `;
 
-  const syncProfs = () => {
+  const renderDiceResults = () => {
     const wid = $("ng-world").value;
     const isW = wid === "maphap";
-    const w = WORLD_PRESETS[wid];
-    $("ng-prof").innerHTML = w.professions.map((p) => `<option value="${p}">${p}</option>`).join("");
-    const classPool = isW ? WESTERN_CLASSES : BUILD_PATHS;
-    $("ng-build").innerHTML = classPool.map((b) => {
-      const hpTag = b.hpMult >= 1 ? `+${Math.round((b.hpMult - 1) * 100)}% HP` : `${Math.round((b.hpMult - 1) * 100)}% HP`;
-      const mpTag = b.mpMult >= 1 ? `+${Math.round((b.mpMult - 1) * 100)}% MP` : `${Math.round((b.mpMult - 1) * 100)}% MP`;
-      return `<option value="${b.id}">${b.name} (${hpTag}, ${mpTag})</option>`;
-    }).join("");
-    $("ng-golden").innerHTML = GOLDEN_FINGERS.map((g) => `<option value="${g.id}">${isW && g.westName ? g.westName : g.name}</option>`).join("");
-    $("ng-physique").innerHTML = isW
-      ? WESTERN_BLOODLINES.map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group}] — ${ph.desc}</option>`).join("")
-      : PHYSIQUES.map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group}] — ${ph.desc}</option>`).join("") +
-        CATALOG_PHYSIQUES.filter((ph) => ph.tier === 1).map((ph) => `<option value="${ph.id}">${ph.name} [${ph.group} • ${ph.grade}]</option>`).join("");
-    const lblBuild = $("ng-build").previousElementSibling;
-    if (lblBuild) lblBuild.textContent = isW ? "Class / Chức Nghiệp (Quyết định HP/Mana khởi đầu)" : "Hướng Build Chủ Đạo (Quyết định HP/MP khởi đầu)";
-    const lblGolden = $("ng-golden").previousElementSibling;
-    if (lblGolden) lblGolden.textContent = isW ? "Di Sản / Dị Năng Khởi Đầu (Có cái giá ẩn!)" : "Bàn Tay Vàng (Lưu ý: Đều có cái giá & âm mưu ẩn!)";
-    const lblPhy = $("ng-physique").previousElementSibling;
-    if (lblPhy) lblPhy.textContent = isW ? "Huyết Mạch (Bloodline)" : "Thể Chất (Chọn từ 100 Thể Chất hoặc Phàm Thể)";
+    const o = rolledOrigin.origin;
+    const g = rolledGolden.golden;
+    const oName = isW && o.westName ? o.westName : o.name;
+    const oDesc = isW && o.westDesc ? o.westDesc : o.desc;
+    const gName = isW && g.westName ? g.westName : g.name;
+    const gDesc = isW && g.westDesc ? g.westDesc : g.desc;
+
+    $("lbl-ng-golden").textContent = isW
+      ? "Di Sản / Dị Năng Khởi Đầu (Gieo Xúc Xắc)"
+      : "Bàn Tay Vàng (Gieo Xúc Xắc Ngẫu Nhiên)";
+    $("ng-origin-result").innerHTML = `
+      <div>🎲 d20 = <strong style="color:var(--accent)">${rolledOrigin.d20}</strong> → <strong>${escapeHtml(oName)}</strong> (${o.startAge || 14} tuổi)</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">${escapeHtml(oDesc)}</div>
+    `;
+    $("ng-golden-result").innerHTML = `
+      <div>🎲 d20 = <strong style="color:var(--accent)">${rolledGolden.d20}</strong> → <strong>${escapeHtml(gName)}</strong></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">${escapeHtml(gDesc)}</div>
+    `;
   };
-  $("ng-world").addEventListener("change", syncProfs);
-  syncProfs();
+
+  $("ng-world").addEventListener("change", renderDiceResults);
+  $("btn-roll-origin").addEventListener("click", () => {
+    rolledOrigin = rollOriginByDice();
+    renderDiceResults();
+  });
+  $("btn-roll-golden").addEventListener("click", () => {
+    rolledGolden = rollGoldenFingerByDice();
+    renderDiceResults();
+  });
+  renderDiceResults();
 
   $("btn-start-run").addEventListener("click", async () => {
     state = createNewGame({
       name: $("ng-name").value,
       worldId: $("ng-world").value,
-      originId: $("ng-origin").value,
-      goldenId: $("ng-golden").value,
-      buildId: $("ng-build").value,
-      physiqueId: $("ng-physique").value,
-      profession: $("ng-prof").value,
+      originId: rolledOrigin.origin.id,
+      goldenId: rolledGolden.golden.id,
+      buildId: null,
+      physiqueId: null,
+      profession: null,
     });
     syncRealmVitals(state, true);
     modal.classList.add("hidden");
@@ -1143,7 +1166,7 @@ function openNewGameModal() {
 
     if (getActiveApiKey(settings)) {
       await handlePlayerAction(
-        "Mở màn chương 1: Giới thiệu bối cảnh nhánh thế giới song song, thân phận nhân vật, gieo manh mối đầu tiên về thế lực xung quanh và đưa ra 3-4 lựa chọn khởi đầu.",
+        `Mở màn chương 1: Nhân vật mới ${state.player.age} tuổi, xuất thân [${state.player.originName}], thể chất [${state.player.physiqueName}], chưa có Class hay Nghề nghiệp. Hãy bắt đầu từ chuyện nhỏ đời thường tại nơi xuất thân (quê nhà/thôn xóm/trấn nhỏ/ngoại môn tạp dịch), đi từ nhỏ đến lớn, từ yếu đến mạnh, và đưa ra 3-4 lựa chọn thực tế ban đầu.`,
         "system"
       );
     } else {
@@ -1156,6 +1179,89 @@ function openNewGameModal() {
       saveGameState(state);
       renderAll();
     }
+  });
+}
+
+function openChooseClassModal() {
+  if (!state || state.player.buildId) return;
+  const modal = $("modal-newgame");
+  const titleEl = modal.querySelector(".modal-header h3");
+  const isW = state.worldId === "maphap";
+  if (titleEl) titleEl.textContent = isW ? "⚔️ Chọn Class / Chức Nghiệp" : "⚔️ Định Hình Hướng Đạo / Class";
+  modal.classList.remove("hidden");
+  const classPool = isW ? WESTERN_CLASSES : BUILD_PATHS;
+  $("newgame-body").innerHTML = `
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">
+      Chọn con đường tu luyện / chức nghiệp sau khi mạch truyện đã dẫn dắt. Lựa chọn này sẽ quyết định hệ số HP/MP và kỹ năng khởi đầu của hướng đó.
+    </div>
+    <div class="field-group">
+      <label>${isW ? "Class / Chức Nghiệp" : "Hướng Đạo Chủ Đạo"}</label>
+      <select id="pick-class-select">
+        ${classPool
+          .map((b) => {
+            const hpTag = b.hpMult >= 1 ? `+${Math.round((b.hpMult - 1) * 100)}% HP` : `${Math.round((b.hpMult - 1) * 100)}% HP`;
+            const mpTag = b.mpMult >= 1 ? `+${Math.round((b.mpMult - 1) * 100)}% MP` : `${Math.round((b.mpMult - 1) * 100)}% MP`;
+            return `<option value="${b.id}">${b.name} (${hpTag}, ${mpTag})</option>`;
+          })
+          .join("")}
+      </select>
+    </div>
+    <button id="btn-confirm-class" class="btn-primary">✅ Xác Nhận Chọn Class</button>
+  `;
+  $("btn-confirm-class").addEventListener("click", () => {
+    const buildId = $("pick-class-select").value;
+    const picked = choosePlayerClass(state, buildId);
+    if (picked) {
+      state.logs.push({
+        type: "system",
+        title: "Định Hình Con Đường",
+        text: `Ngươi đã chính thức bước vào con đường [${picked.name}].`,
+      });
+      state.storySummary = `${state.storySummary} Đã chọn hướng [${picked.name}].`.slice(-600);
+      saveGameState(state);
+      renderAll();
+    }
+    modal.classList.add("hidden");
+  });
+}
+
+function openChooseProfessionModal() {
+  if (!state) return;
+  const modal = $("modal-newgame");
+  const titleEl = modal.querySelector(".modal-header h3");
+  if (titleEl) titleEl.textContent = "🛠 Học / Chọn Nghề Nghiệp (Bách Nghệ)";
+  modal.classList.remove("hidden");
+  const world = WORLD_PRESETS[state.worldId];
+  const learned = new Set((state.player.professions || []).map((pr) => pr.name));
+  const available = world.professions.filter((pr) => !learned.has(pr));
+  if (!available.length) {
+    $("newgame-body").innerHTML = `<div class="list-card">Bạn đã học hết các nghề nghiệp hiện có của nhánh thế giới này.</div>`;
+    return;
+  }
+  $("newgame-body").innerHTML = `
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">
+      Chọn nghề nghiệp phụ trợ sau khi nhân vật có cơ duyên tiếp xúc hoặc bái sư học nghề.
+    </div>
+    <div class="field-group">
+      <label>Nghề Nghiệp</label>
+      <select id="pick-prof-select">
+        ${available.map((pr) => `<option value="${pr}">${pr}</option>`).join("")}
+      </select>
+    </div>
+    <button id="btn-confirm-prof" class="btn-primary">✅ Bái Sư / Nhận Nghề</button>
+  `;
+  $("btn-confirm-prof").addEventListener("click", () => {
+    const profName = $("pick-prof-select").value;
+    if (choosePlayerProfession(state, profName)) {
+      state.logs.push({
+        type: "system",
+        title: "Nhập Môn Nghề Nghiệp",
+        text: `Ngươi đã bắt đầu học nghề [${profName} - Nhất Phẩm Học Đồ].`,
+      });
+      saveGameState(state);
+      renderAll();
+    }
+    modal.classList.add("hidden");
   });
 }
 
