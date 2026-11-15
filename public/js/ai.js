@@ -188,10 +188,6 @@ export function pickModel(settings, state, isMajorEvent = false) {
   if (settings.customModel) return settings.customModel;
   const pref = settings.modelMode || "auto";
   if (pref === "pro") return "gemini-3.8-pro";
-  if (pref === "flash") return "gemini-3.8-flash";
-  if (isMajorEvent || state.player.tier >= 3 || state.mode === "ngodao") {
-    return "gemini-3.8-pro";
-  }
   return "gemini-3.8-flash";
 }
 
@@ -429,6 +425,9 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
     }
   }
   const detail = data.error?.message || "Quá thời gian chờ hoặc hết quota.";
+  if (lastStatus === 429) {
+    throw new Error(`Hết giới hạn lượt miễn phí (429): ${detail}\n💡 Mẹo: Free Tier giới hạn số lượt/phút (RPM) hoặc token/phút (TPM). Hãy đợi ~30–60 giây rồi gửi lại, hoặc vào ⚙️ Cài Đặt → 🔍 Quét chọn model Flash-Lite (quota cao hơn).\n[Đã thử: ${attempts.join(", ")}]`);
+  }
   throw new Error(`Gemini API Error (${lastStatus}): ${detail}\n[Đã thử: ${attempts.join(", ")}]`);
 }
 
@@ -440,7 +439,7 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
 
   const model = pickModel(settings, state, isMajorEvent);
   const recentLogs = state.logs
-    .slice(-6)
+    .slice(-4)
     .map((l) => (l.type === "player" ? `[Người chơi]: ${l.text}` : `[Diễn biến]: ${l.text}`))
     .join("\n");
 
