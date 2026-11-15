@@ -266,6 +266,18 @@ ${state.authorDirectives || "Không có."}
 12. Luôn trả về đúng JSON Schema, tiếng Việt tự nhiên, giàu hình ảnh, độ dài \`narrative\` khoảng 180–320 chữ để đọc cực sướng trên điện thoại dọc.`;
 }
 
+const DIRECT_MODEL_CACHE = new Map();
+
+async function fetchWithTimeout(url, options, timeoutMs = 30000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function postDirectGemini(apiKey, modelName, payload) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const body = structuredClone(payload);
@@ -273,18 +285,26 @@ async function postDirectGemini(apiKey, modelName, payload) {
     body.generationConfig = body.generationConfig || {};
     body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
   }
-  let res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 400 && body.generationConfig?.thinkingConfig) {
-    delete body.generationConfig.thinkingConfig;
-    res = await fetch(url, {
+  let res = await fetchWithTimeout(
+    url,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    });
+    },
+    30000
+  );
+  if (res.status === 400 && body.generationConfig?.thinkingConfig) {
+    delete body.generationConfig.thinkingConfig;
+    res = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      30000
+    );
   }
   return res;
 }
@@ -322,11 +342,15 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
   const isLocal = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname);
   if (isLocal) {
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, model, payload }),
-      });
+      const res = await fetchWithTimeout(
+        "/api/gemini",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apiKey, model, payload }),
+        },
+        65000
+      );
       if (res.status !== 404 && res.status !== 405) {
         const data = await res.json();
         if (!res.ok) {
@@ -336,30 +360,50 @@ async function callGeminiProxyOrDirect({ apiKey, model, payload }) {
         return data;
       }
     } catch (e) {
+      if (e.name === "AbortError") throw new Error("Gemini API quá thời gian chờ (65s). Hãy thử lại hoặc chọn model Flash trong ⚙️ Cài Đặt.");
       if (e.message && e.message.includes("Gemini API Error")) throw e;
     }
   }
 
-  let res = await postDirectGemini(apiKey, model, payload);
-  let data = await res.json();
-  if (res.ok) return { ...data, _resolvedModel: model };
+  const wantPro = model.toLowerCase().includes("pro");
+  const cacheKey = `${apiKey}:${wantPro}`;
+  const activeModel = DIRECT_MODEL_CACHE.get(cacheKey) || model;
+
+  let res;
+  let data = {};
+  try {
+    res = await postDirectGemini(apiKey, activeModel, payload);
+    data = await res.json();
+    if (res.ok) return { ...data, _resolvedModel: activeModel };
+  } catch (e) {
+    res = { status: e.name === "AbortError" ? 504 : 500 };
+  }
 
   if ([404, 429, 500, 503, 504].includes(res.status)) {
     const models = await listGeminiModels(apiKey).catch(() => []);
-    const wantPro = model.toLowerCase().includes("pro");
-    const sorted = [...models].sort((a, b) => {
-      const am = (wantPro ? a.includes("pro") : a.includes("flash")) ? 1 : 0;
-      const bm = (wantPro ? b.includes("pro") : b.includes("flash")) ? 1 : 0;
-      return bm - am;
-    });
-    for (const cand of sorted.slice(0, 12)) {
-      if (cand === model) continue;
-      const r2 = await postDirectGemini(apiKey, cand, payload);
-      const d2 = await r2.json();
-      if (r2.ok) return { ...d2, _resolvedModel: cand };
+    const score = (n) => {
+      const low = n.toLowerCase();
+      const tierMatch = (wantPro ? low.includes("pro") : low.includes("flash")) ? 1 : 0;
+      const notLite = !low.includes("lite") ? 1 : 0;
+      const notExp = !low.includes("exp") && !low.includes("preview") ? 1 : 0;
+      return tierMatch * 4 + notLite * 2 + notExp;
+    };
+    const sorted = [...models].sort((a, b) => score(b) - score(a));
+    for (const cand of sorted.slice(0, 6)) {
+      if (cand === activeModel) continue;
+      try {
+        const r2 = await postDirectGemini(apiKey, cand, payload);
+        const d2 = await r2.json();
+        if (r2.ok) {
+          DIRECT_MODEL_CACHE.set(cacheKey, cand);
+          return { ...d2, _resolvedModel: cand };
+        }
+      } catch {
+        // Try next candidate
+      }
     }
   }
-  throw new Error(`Gemini API Error (${res.status}): ${data.error?.message || JSON.stringify(data)}`);
+  throw new Error(`Gemini API Error (${res.status}): ${data.error?.message || "Quá thời gian chờ hoặc hết quota. Hãy chọn model Flash trong ⚙️ Cài Đặt."}`);
 }
 
 export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent = false }) {
