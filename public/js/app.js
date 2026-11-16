@@ -49,6 +49,7 @@ import {
   rollGoldenFingerByDice,
   choosePlayerClass,
   choosePlayerProfession,
+  detectContextUnlockedClasses,
   pushSnapshot,
   exportNovelMarkdown,
 } from "./engine.js";
@@ -198,14 +199,21 @@ function renderTabs() {
     ? WESTERN_CLASSES.find((b) => b.id === p.buildId) || BUILD_PATHS.find((b) => b.id === p.buildId)
     : null;
   const isMortalBody = p.physiqueId === "phamthe" || p.physiqueId === "wb_human";
+  const unlockedClassIds = state.unlockedClasses || [];
 
   $("tab-stats").innerHTML = `
     <div class="list-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
       <span>Thể chất: <strong style="color:var(--accent)">${escapeHtml(p.physiqueName || "Phàm Thể")}</strong> (${phyProg}%)${isMortalBody ? " <em style='font-size:10px;color:var(--muted);'>(Hình thành sau qua công pháp & kì ngộ)</em>" : ""}</span>
       <span>Điểm Tiềm Năng: <strong style="color:var(--accent)">${p.potentialPoints}</strong></span>
       <div style="width:100%;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);">
-        <span>${isWest ? "Class / Chức Nghiệp" : "Hướng Đạo / Class"}: <strong style="color:var(--text)">${currentBuild ? escapeHtml(currentBuild.name) : "Chưa định hình (Chọn sau theo mạch truyện)"}</strong></span>
-        ${!currentBuild ? `<button id="btn-choose-class" class="mini-btn">⚔️ Chọn Class</button>` : ""}
+        <span>${isWest ? "Class / Chức Nghiệp" : "Hướng Đạo / Class"}: <strong style="color:${currentBuild ? "var(--text)" : "var(--muted)"}">${currentBuild ? escapeHtml(currentBuild.name) : "Chưa định hình (Chờ cơ duyên)"}</strong></span>
+        ${
+          !currentBuild
+            ? unlockedClassIds.length > 0
+              ? `<button id="btn-choose-class" class="mini-btn">⚔️ Chọn Class (${unlockedClassIds.length})</button>`
+              : `<button id="btn-choose-class" class="mini-btn" disabled style="opacity:0.45;cursor:not-allowed;" title="Chưa có cơ duyên mở khóa Class trong mạch truyện">🔒 Chọn Class</button>`
+            : ""
+        }
       </div>
       ${phyBonusText ? `<span style="color:var(--muted);width:100%;font-size:10.5px;">Điểm gốc thể chất (mỗi lần lên Lv × Tầng): <strong style="color:var(--accent)">${phyBonusText}</strong></span>` : ""}
       ${
@@ -866,10 +874,23 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult =
     state.logs.push({ type: "system", title: "Biến Động", text: sc.systemAlert });
   }
 
+  const newlyUnlocked = detectContextUnlockedClasses(state, res.narrative, res.choices, sc.unlockClasses);
+  if (newlyUnlocked.length > 0) {
+    const classPool = state.worldId === "maphap" ? WESTERN_CLASSES : BUILD_PATHS;
+    const names = newlyUnlocked
+      .map((id) => classPool.find((c) => c.id === id)?.name || id)
+      .join(", ");
+    state.logs.push({
+      type: "system",
+      title: "Mở Khóa Cơ Duyên Class",
+      text: `Mạch truyện đã mở ra cơ duyên định hình hướng [${names}]. Bạn có thể vào tab Chỉ Số để chọn Class!`,
+    });
+  }
+
   if (res.summaryUpdate) state.storySummary += `\n- Lượt ${state.turn}: ${res.summaryUpdate}`;
   if (res.hiddenNotesUpdate) state.hiddenNotes += `\n[Lượt ${state.turn}]: ${res.hiddenNotesUpdate}`;
 
-  // Kiểm tra chết -> Tam Sinh Thạch quay lại lựa chọn trước (3 lần/ngày), hết 3 lần -> Địa Phủ / Game Over
+  // Kiểm tra chết -> Tam Sinh Thạch quay lại lựa chọn trước (3 lần/ngày), hết 3 lần -> xuống Âm Phủ luôn
   if (p.hp <= 0) {
     const tst = syncTamSinhThachDaily(p);
     if (!state.isAfterlife && tst.usesLeft > 0 && state.snapshots && state.snapshots.length > 0) {
@@ -885,7 +906,7 @@ function applyAiResult(res, combatOutcome = null, modelUsed = "", combatResult =
         title: `🪨 TAM SINH THẠCH KÍCH HOẠT — CÒN ${tst.usesLeft}/3 LẦN HÔM NAY`,
         text: `Ngươi vừa bỏ mạng (${deathSnippet}...). Tam Sinh Thạch bùng phát ánh sáng nhân quả, đưa ngươi quay ngược về lựa chọn ngay trước lúc chết! Hôm nay còn ${tst.usesLeft}/3 lần hồi sinh (hết 3 lần sẽ hồn xuống Địa Phủ, qua ngày mới sẽ reset lại).`,
       });
-    } else if (!state.isAfterlife && p.stats.linhhon >= 5) {
+    } else if (!state.isAfterlife) {
       enterAfterlife(state);
     } else {
       state.mode = "gameover";
@@ -1194,18 +1215,20 @@ function openNewGameModal() {
 
 function openChooseClassModal() {
   if (!state || state.player.buildId) return;
+  const unlockedIds = state.unlockedClasses || [];
+  if (!unlockedIds.length) return;
   const modal = $("modal-newgame");
   const titleEl = modal.querySelector(".modal-header h3");
   const isW = state.worldId === "maphap";
   if (titleEl) titleEl.textContent = isW ? "⚔️ Chọn Class / Chức Nghiệp" : "⚔️ Định Hình Hướng Đạo / Class";
   modal.classList.remove("hidden");
-  const classPool = isW ? WESTERN_CLASSES : BUILD_PATHS;
+  const classPool = (isW ? WESTERN_CLASSES : BUILD_PATHS).filter((b) => unlockedIds.includes(b.id));
   $("newgame-body").innerHTML = `
     <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">
-      Chọn con đường tu luyện / chức nghiệp sau khi mạch truyện đã dẫn dắt. Lựa chọn này sẽ quyết định hệ số HP/MP và kỹ năng khởi đầu của hướng đó.
+      Chọn Class đã mở khóa từ cơ duyên trong mạch truyện. Lựa chọn này sẽ quyết định hệ số HP/MP và kỹ năng khởi đầu của hướng đó.
     </div>
     <div class="field-group">
-      <label>${isW ? "Class / Chức Nghiệp" : "Hướng Đạo Chủ Đạo"}</label>
+      <label>${isW ? "Class / Chức Nghiệp Khả Dụng" : "Hướng Đạo Đã Mở Khóa"}</label>
       <select id="pick-class-select">
         ${classPool
           .map((b) => {

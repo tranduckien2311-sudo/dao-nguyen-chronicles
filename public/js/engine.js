@@ -475,6 +475,7 @@ export function createNewGame({ name, worldId, originId, goldenId, buildId = nul
     hiddenNotes,
     authorDirectives: "",
     tone: "Cân não, chặt chẽ, phong cách tiểu thuyết mạng",
+    unlockedClasses: [],
     snapshots: [],
   };
   syncPhysiqueTierAbilities(newState.player);
@@ -837,6 +838,7 @@ export function syncPhysiqueTierAbilities(player) {
 
 export function enterAfterlife(state) {
   const world = WORLD_PRESETS[state.worldId];
+  const isWest = state.worldId === "maphap";
   state.isAfterlife = true;
   state.afterlifeForm = "soul";
   state.afterlifeRealmIndex = 0;
@@ -850,16 +852,87 @@ export function enterAfterlife(state) {
   state.player.maxHp = state.player.maxMp;
   state.mode = "normal";
   state.enemy = null;
+  state.choices = isWest
+    ? [
+        { text: "Quan sát Bến Sông Styx và bờ Minh Giới", statTag: "Tâm trí" },
+        { text: "Dò hỏi Linh Hồn dẫn đường / Phán Quan Minh Giới", statTag: "Linh hồn" },
+        { text: "Tĩnh tâm ngưng tụ Ma Lực Hồn Thể", statTag: "Linh hồn" },
+      ]
+    : [
+        { text: "Quan sát Quỷ Môn Quan và dòng Vong Xuyên", statTag: "Tâm trí" },
+        { text: "Tìm Quỷ Sai / Phán Quan dò hỏi quy tắc Địa Phủ", statTag: "Linh hồn" },
+        { text: "Tĩnh tâm tu luyện Hồn Thể tại Âm Giới", statTag: "Linh hồn" },
+      ];
+  state.storySummary = `${state.storySummary || ""} Đã tử vong, linh hồn rơi xuống ${world.afterlife.name}.`.slice(-600);
   state.logs.push({
     type: "system",
     title: `LINH HỒN RỚT XUỐNG ${world.afterlife.name.toUpperCase()}`,
-    text: `Nhục thân đã hủy (Căn cốt về 0, Sinh Lực tính bằng Linh Lực/Mana: ${state.player.mp}/${state.player.maxMp}), nhưng Linh Hồn (${state.player.stats.linhhon}) vẫn nguyên vẹn! Ngươi đang ở trạng thái **Hồn Thể** (${state.player.realm}): mỗi lần lên cấp Linh Hồn tăng thêm +(lv×tầng/2). Tu thành **Quỷ Thể** sẽ khôi phục lại Căn cốt!`,
+    text: `Hết lượt Tam Sinh Thạch! Nhục thân đã hủy (Căn cốt về 0, Sinh Lực = Linh Lực/Mana: ${state.player.mp}/${state.player.maxMp}), Linh Hồn (${state.player.stats.linhhon}) rơi vào ${world.afterlife.name}. Ngươi đang ở trạng thái **Hồn Thể** (${state.player.realm}): mỗi lần lên cấp Linh Hồn tăng thêm +(lv×tầng/2). Tu thành **Quỷ Thể** sẽ khôi phục lại Căn cốt!`,
   });
+}
+
+export function detectContextUnlockedClasses(state, narrativeText = "", choices = [], explicitIds = []) {
+  if (!state || state.player?.buildId) return [];
+  const isWest = state.worldId === "maphap";
+  const pool = isWest ? WESTERN_CLASSES : BUILD_PATHS;
+  const validIds = new Set(pool.map((c) => c.id));
+  if (!Array.isArray(state.unlockedClasses)) state.unlockedClasses = [];
+  const existing = new Set(state.unlockedClasses);
+  const newlyUnlocked = [];
+
+  for (const id of explicitIds || []) {
+    if (validIds.has(id) && !existing.has(id)) {
+      existing.add(id);
+      state.unlockedClasses.push(id);
+      newlyUnlocked.push(id);
+    }
+  }
+
+  const haystack = [
+    narrativeText,
+    ...(choices || []).map((c) => c.text || ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const rules = isWest
+    ? [
+        { id: "kysi", re: /kỵ sĩ|huấn luyện kiếm thuẫn|hiệp sĩ|thánh kỵ|giáp sắt/i },
+        { id: "phapsu", re: /hội pháp sư|học viện ma pháp|bái sư pháp sư|nhập môn ma pháp/i },
+        { id: "thuatsi", re: /thuật sĩ|khế ước ác ma|nguyên tố hỗn mang|hắc thuật/i },
+        { id: "thanhsi", re: /giáo hội|thánh điện|mục sư|thánh quang|tế tư/i },
+        { id: "giakim", re: /giả kim|pha chế ma dược|luyện kim|lò giả kim/i },
+        { id: "hocgia", re: /học giả|thư viện cổ|chiêm tinh|giải mã cổ ngữ/i },
+        { id: "tulinh", re: /tử linh|chiêu hồn|nghĩa địa|hắc ám pháp sư/i },
+        { id: "thichkhach", re: /thích khách|sát thủ|ám sát|hội bóng tối/i },
+        { id: "cungthu", re: /xạ thủ|cung thủ|thợ săn|kiểm lâm/i },
+      ]
+    : [
+        { id: "thetu", re: /luyện thể|thể tu|rèn gân cốt|võ quán|nội kình|quyền pháp/i },
+        { id: "khitu", re: /luyện khí|khí tu|kiếm tông|kiếm quyết|trận pháp|linh kiếm/i },
+        { id: "phaptu", re: /pháp tu|ngũ hành pháp thuật|lôi pháp|hỏa pháp|nội môn pháp/i },
+        { id: "hontu", re: /hồn tu|luyện hồn|quỷ đạo|âm hồn|thần hồn/i },
+        { id: "phattu", re: /phật tu|thiền viện|chùa|nhà sư|kinh phật|sa môn|thiền sư/i },
+        { id: "nhotu", re: /nho tu|học cung|thư viện|hạo nhiên chính khí|thánh hiền|khoa cử/i },
+        { id: "matu", re: /ma tu|ma tông|huyết sát|ma công|ma đạo/i },
+        { id: "nguthu", re: /ngự thú|thuần thú|linh thú|yêu thú khế ước/i },
+        { id: "phapbao", re: /luyện khí sư|khí tông|bảo khí|rèn pháp bảo/i },
+      ];
+
+  for (const r of rules) {
+    if (validIds.has(r.id) && !existing.has(r.id) && r.re.test(haystack)) {
+      existing.add(r.id);
+      state.unlockedClasses.push(r.id);
+      newlyUnlocked.push(r.id);
+    }
+  }
+  return newlyUnlocked;
 }
 
 export function pushSnapshot(state) {
   const copy = structuredClone(state);
   copy.snapshots = [];
+  delete copy._lastAiView;
   state.snapshots = [copy, ...(state.snapshots || [])].slice(0, 5);
 }
 
