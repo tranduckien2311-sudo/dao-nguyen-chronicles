@@ -194,46 +194,57 @@ export function pickModel(settings, state, isMajorEvent = false) {
   return "gemini-3.8-flash";
 }
 
-export function buildSystemPrompt(state) {
+export function buildStaticSystemPrompt(state) {
   const world = WORLD_PRESETS[state.worldId];
+  const isWest = state.worldId === "maphap";
+  const westRule = isWest
+    ? `\n7. TÂY VỰC: Cấm từ Tu Tiên (linh khí, đan điền, kinh mạch, đan dược, đạo hữu). Dùng: Ma Lực(Mana), Minh Tưởng, Ma Điển, Ấn Chú, Ma Dược, Huyết Mạch, Cổ Vật, Hội Pháp Sư.`
+    : "";
+
+  return `GM tiểu thuyết tương tác tiếng Việt. Văn phong:${world.styleRef}. Giọng:${state.tone}.
+[LUẬT]
+1. Mạch truyện TỪ NHỎ ĐẾN LỚN, TỪ YẾU ĐẾN MẠNH, chuyện nhỏ tăng dần (sinh hoạt đời thường, mâu thuẫn nhỏ, không nhảy cóc đại chiến). Người chơi là người bình thường (không hào quang nhân vật chính, nhưng không xui tận mạng). Hãm hại/hạ độc/hấp tinh/sập bẫy chỉ xảy ra khi vào hiểm địa, đắc tội kẻ xấu hoặc Đại Thất Bại. Dẫn dắt tự nhiên để sau này mới chọn Class/Nghề hoặc đổi physiqueUpdate qua công pháp/kì ngộ. Dưới Hóa Thần cấm Thần Thức. ~15% lượt thường mở mode="ngodao".
+2. Combat: mode="combat", enemy ngắn (LuyệnKhí 100-1k+, TrúcCơ 1k-5k, KimĐan 5k-10k, NguyênAnh 10k-50k, HóaThần+ 50k+). Giữ nguyên enemy.maxHp & kế thừa enemy.hp; chỉ đặt maxHpChanged=true khi đổi MaxHP, hpHealed=true khi hồi máu. hp<=0 -> mode="normal", enemy=null.
+3. Theo xúc xắc/DMG Engine; không biến câu hành động thành tên chiêu. Thất Bại -> hỏng việc/tổn nhẹ-vừa; Đại Thất Bại/hiểm địa -> có thể trúng bẫy, độc, hãm hại, hao tu vi (cultivationDelta<0). Text nhảm/vô nghĩa/lạc ngữ cảnh/tự bịa cơ duyên -> Thiên Phạt (-50..100% HP, 0 thưởng). Tìm chết/thua cường giả -> viết rõ bị nhìn thấu, chưởng chết/vạn kiếm xuyên tâm rồi hpDelta=-999999.
+4. Lượt thường không đột phá mồm (realmUpdate=null). potentialDelta mặc định 0. Trang bị gắn slot(armor|weapon|accessory).
+5. choices(3-4 mục) sát hoàn cảnh; statTag chỉ dùng: Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận.
+6. narrative CỰC NGẮN (40-80 chữ), đi thẳng diễn biến & kết quả. summaryUpdate<=15 chữ.${westRule}`;
+}
+
+export function buildDynamicStateBlock(state) {
   const tierInfo = COSMIC_TIERS[state.player.tier - 1];
   const derived = computeDerivedStats(state.player);
   const p = state.player;
-  const hiddenTail = String(state.hiddenNotes || "").slice(-450);
+  const hiddenTail = String(state.hiddenNotes || "").slice(-220);
   const originEntity = ORIGIN_ENTITIES[p.physiqueGroup]?.[0];
   const isWest = state.worldId === "maphap";
   const buildObj = p.buildId
     ? WESTERN_CLASSES.find((b) => b.id === p.buildId) || BUILD_PATHS.find((b) => b.id === p.buildId)
     : null;
-  const buildLabel = buildObj ? buildObj.name : "Chưa định hình (Chọn sau theo mạch truyện)";
-  const profLabel = p.professions?.length ? p.professions.map((pr) => pr.name).join(",") : "Chưa có (Chọn sau)";
+  const buildLabel = buildObj ? buildObj.name : "Chưa chọn";
+  const profLabel = p.professions?.length ? p.professions.map((pr) => pr.name).join(",") : "Chưa có";
   const catalogHint =
-    state.mode === "normal"
+    state.mode === "normal" && state.turn % 3 === 1
       ? isWest
-        ? `\n- Kho Tây Vực T${p.tier}: MaĐiển[${pickRandomSample(WESTERN_GRIMOIRES, p.tier, 2).map((x) => x.name).join(",")}] Phép[${pickRandomSample(WESTERN_SPELLS, p.tier, 2).map((x) => x.name).join(",")}] Đồ[${pickRandomSample(WESTERN_ITEMS, p.tier, 2).map((x) => x.name).join(",")}]`
-        : `\n- Gợi ý T${p.tier}: CP[${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Chiến[${pickRandomSample(CATALOG_CHIEN_PHAP, p.tier, 2).map((x) => x.name).join(",")}] Thú[${pickRandomSample(MYTHIC_CREATURES, p.tier, 2).map((c) => c.name).join(",")}]`
+        ? `\nGợi ý T${p.tier}: ${pickRandomSample(WESTERN_GRIMOIRES, p.tier, 1).map((x) => x.name)} | ${pickRandomSample(WESTERN_ITEMS, p.tier, 1).map((x) => x.name)}`
+        : `\nGợi ý T${p.tier}: ${pickRandomSample(CATALOG_CONG_PHAP, p.tier, 1).map((x) => x.name)} | ${pickRandomSample(MYTHIC_CREATURES, p.tier, 1).map((c) => c.name)}`
       : "";
-  const westRule = isWest
-    ? `\n8. PHONG CÁCH PHƯƠNG TÂY: TUYỆT ĐỐI KHÔNG dùng từ Tu Tiên (cấm: linh khí, đan điền, kinh mạch, đan dược, đạo hữu, ngọc giản). Dùng: Ma Lực(Mana), Minh Tưởng, Ma Điển(Grimoire), Ấn Chú(Rune), Ma Dược(Potion/Elixir), Huyết Mạch, Cổ Vật(Relic), Khế Ước, Hội Pháp Sư/Giáo Hội.`
-    : "";
+  const resEntries = Object.entries(derived.effectiveResist || {})
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => `${k}:${v}%`)
+    .join(" ");
 
-  return `GM tiểu thuyết tương tác tiếng Việt. Văn phong:${world.styleRef}. Giọng:${state.tone}.
-[NHÂN VẬT] ${p.name} | ${p.originName} | Class:${buildLabel} | Nghề:${profLabel} | Thể chất:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}/5${p.tier >= 4 ? " HÓA ĐẠO" : ""}) | Bàn tay vàng:${p.goldenName}
-- ${tierInfo.short} | ${state.currentParallelRealm} | ${state.timeline || "Hiện Tại"}${state.isAfterlife ? (state.afterlifeForm === "ghost_body" ? " | ÂM GIỚI(QUỶ THỂ)" : " | ÂM GIỚI(HỒN THỂ: CănCốt=0, HP=Mana)") : ""} | Cảnh giới:${p.realm} | Tuổi:${p.age}/${p.lifespan} | HP:${p.hp}/${p.maxHp} MP:${p.mp}/${p.maxMp} TuVi:${p.cultivation}%
-- Chỉ số: CănCốt ${p.stats.cancot}, TâmTrí ${p.stats.tamtin}, LinhHồn ${p.stats.linhhon}, NgộTính ${p.stats.ngotinh}, ThiênPhú ${p.stats.thienphu}, KhíVận ${p.stats.khivan}, CôngĐức ${p.stats.congduc}, Nghiệp ${p.stats.nghiepluc}, DanhVọng ${p.stats.danhvong} (MayMắn ${derived.effectiveLuck}, NhạyÂmMưu ${derived.conspiracySense}).
-- ThầnThức:${derived.hasDivineSense ? "CÓ" : "CHƯA CÓ(dưới Hóa Thần cấm dùng)"} | Giáp:${derived.baseArmor} | Kháng VL:${derived.effectiveResist.physical}% Phép:${derived.effectiveResist.magic}% Hồn:${derived.effectiveResist.soul}% Độc:${derived.effectiveResist.poison}% Luật:${derived.effectiveResist.law}% | TrangBị: Giáp[${p.defense?.equippedArmor || "0"}] VũKhí[${p.equipment?.weapon || "0"}] PK[${p.equipment?.accessory || "0"}]
-- KỹNăng: ${p.skills.slice(0, 6).map((s) => `${s.name}(B${s.tier}L${s.level})`).join("; ")}
-- TúiĐồ: ${p.inventory.slice(-6).map((i) => `${i.name}x${i.qty}`).join("; ")}
-- NhânMạch: ${p.relationships.slice(-5).map((r) => `${r.name}[${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- ĐỊCH(KHÓA maxHp): ${state.enemy.name}(${state.enemy.realm}) HP:${state.enemy.hp}/${state.enemy.maxHp} Ý:${state.enemy.intent || "Đánh"}` : ""}${catalogHint}
-[BỐI CẢNH ẨN(CHỈ RẢI MANH MỐI)] ${hiddenTail} | Gốc:${originEntity?.name || "Đạo Nguyên"} | ChỉĐạo:${state.authorDirectives || "Không"}
-[LUẬT]
-1. Mạch truyện đi TỪ NHỎ ĐẾN LỚN, TỪ YẾU ĐẾN MẠNH, chuyện nhỏ tăng dần (sinh hoạt quê nhà/thôn xóm/tạp dịch, mâu thuẫn nhỏ nhặt, kiếm kế sinh nhai... tuyệt đối KHÔNG nhảy cóc đại chiến hay biến cố cấp cao khi còn yếu). Người chơi là người bình thường: KHÔNG có hào quang nhân vật chính, nhưng cũng KHÔNG xui tận mạng bước nào cũng gặp bẫy. Thế giới chân thực, có thiện có ác; hãm hại, hạ độc, hấp tinh, sập bẫy chỉ xảy ra khi vào nơi nguy hiểm, đắc tội kẻ xấu hoặc đại thất bại, không nhồi nhét vô lý vào sinh hoạt thường ngày. Nếu chưa chọn Class/Nghề hoặc còn Phàm Thể, dẫn dắt tự nhiên qua bái sư/học viện/công pháp/kì ngộ để sau này mới định hình (chỉ đổi physiqueUpdate khi luyện công pháp đặc thù hoặc gặp kì ngộ lớn). Dưới Hóa Thần cấm dùng Thần Thức. ~15% lượt thường mở mode="ngodao".
-2. Combat: mode="combat", enemy ngắn gọn (HP: LuyệnKhí 100-1k+, TrúcCơ 1k-5k, KimĐan 5k-10k, NguyênAnh 10k-50k, HóaThần+ 50k+). Giữ nguyên enemy.maxHp & kế thừa enemy.hp; chỉ đặt maxHpChanged=true khi buff/trừ/giải MaxHP, hpHealed=true khi hồi máu. hp<=0 -> mode="normal", enemy=null.
-3. Theo kết quả xúc xắc/DMG Engine; KHÔNG biến câu chữ hành động thành tên chiêu thức. Giữ chặt đẳng cấp cảnh giới (Luyện Khí T1 DMG ~20-80). Khi xúc xắc Thất Bại -> xử lý thất bại hợp lý theo hoàn cảnh (làm hỏng việc, tốn công, lộ sơ hở, tổn thất nhẹ-vừa); chỉ khi Đại Thất Bại hoặc đang ở hiểm địa/đối đầu kẻ thù mới cho sập bẫy, trúng độc, bị hãm hại hoặc hút tu vi (cultivationDelta < 0). Nếu text nhảm/vô nghĩa/không hợp ngữ cảnh/tự bịa cơ duyên (vd bí kíp rơi từ trời) -> giáng Thiên Phạt (trừ 50-100% HP, không thưởng). Nếu tìm chết/thua cường giả -> viết rõ bối cảnh bị nhìn thấu, một chưởng đánh chết, vạn kiếm xuyên tâm... rồi đặt hpDelta=-999999.
-4. Cấm đột phá mồm: lượt thường không viết đã đột phá & để realmUpdate=null (trừ truyền công/bị phế).
-5. potentialDelta mặc định 0 (chỉ cho khi ăn Thiên Tài Địa Bảo hoặc sáng tạo công pháp >=80đ). Trang bị gắn slot(armor|weapon|accessory).
-6. choices(3-4 mục) bám sát hoàn cảnh & đồ/skill thực tế; statTag chỉ dùng: Căn cốt|Tâm trí|Linh hồn|Ngộ tính|Thiên phú|Khí vận.
-7. narrative tiếng Việt CỰC NGẮN GỌN (40–80 chữ), chỉ nêu thẳng ý chính, diễn biến & kết quả, KHÔNG hành văn dài dòng. summaryUpdate ≤15 chữ.${westRule}`;
+  return `[NV] ${p.name} | ${p.originName} | Class:${buildLabel} | Nghề:${profLabel} | Thể:${p.physiqueName || "Phàm Thể"}(${p.physiqueProgress || 0}%,T${p.tier}) | BTV:${p.goldenName}
+- ${tierInfo.short} | ${state.currentParallelRealm} | ${state.timeline || "Hiện Tại"}${state.isAfterlife ? (state.afterlifeForm === "ghost_body" ? " | QUỶ THỂ" : " | HỒN THỂ(CănCốt=0,HP=MP)") : ""} | ${p.realm} | Tuổi:${p.age}/${p.lifespan} | HP:${p.hp}/${p.maxHp} MP:${p.mp}/${p.maxMp} TuVi:${p.cultivation}%
+- ChỉSố: CC ${p.stats.cancot}, TT ${p.stats.tamtin}, LH ${p.stats.linhhon}, NT ${p.stats.ngotinh}, TP ${p.stats.thienphu}, KV ${p.stats.khivan}, May ${derived.effectiveLuck}, Giáp ${derived.baseArmor}${resEntries ? `, Kháng[${resEntries}]` : ""}, ThầnThức:${derived.hasDivineSense ? "CÓ" : "0"}
+- Skill: ${p.skills.slice(0, 3).map((s) => `${s.name}(B${s.tier}L${s.level})`).join("; ")}
+- Đồ: ${p.inventory.slice(-4).map((i) => `${i.name}x${i.qty}`).join("; ")}
+- QuanHệ: ${p.relationships.slice(-3).map((r) => `${r.name}[${r.affinity}]`).join("; ")}${state.mode === "combat" && state.enemy ? `\n- ĐỊCH: ${state.enemy.name}(${state.enemy.realm}) HP:${state.enemy.hp}/${state.enemy.maxHp} Ý:${state.enemy.intent || "Đánh"}` : ""}${catalogHint}
+[ẨN] ${hiddenTail} | Gốc:${originEntity?.name || "Đạo Nguyên"} | ChỉĐạo:${state.authorDirectives || "0"}`;
+}
+
+export function buildSystemPrompt(state) {
+  return `${buildStaticSystemPrompt(state)}\n${buildDynamicStateBlock(state)}`;
 }
 
 const DIRECT_MODEL_CACHE = new Map();
@@ -510,16 +521,18 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
   }
 
   const recentLogs = state.logs
-    .slice(-2)
+    .slice(-1)
     .map((l) => {
       const txt = String(l.text || "").replace(/\n\[AI:[^\]]+\]$/, "").trim();
-      const shortTxt = txt.length > 140 ? `${txt.slice(0, 140)}...` : txt;
+      const shortTxt = txt.length > 120 ? `${txt.slice(0, 120)}...` : txt;
       return l.type === "player" ? `[P]: ${shortTxt}` : `[GM]: ${shortTxt}`;
     })
     .join("\n");
 
-  const summaryTail = String(state.storySummary || "").slice(-600);
-  const fullUserContent = `Tóm tắt:\n${summaryTail}\n\nGần nhất:\n${recentLogs || "(Mới)"}\n\nLượt này:\n${userPrompt}`;
+  const summaryTail = String(state.storySummary || "").slice(-350);
+  const staticSys = buildStaticSystemPrompt(state);
+  const dynamicBlock = buildDynamicStateBlock(state);
+  const fullUserContent = `${dynamicBlock}\n\nTóm tắt:${summaryTail}\nGần nhất:${recentLogs || "(Mới)"}\nLượt này:${userPrompt}`;
 
   let parsed;
   let modelUsed = "";
@@ -551,7 +564,7 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
           url,
           apiKey,
           model: cand,
-          systemPrompt: `${buildSystemPrompt(state)}\n${OPENAI_JSON_FORMAT_HINT}`,
+          systemPrompt: `${staticSys}\n${OPENAI_JSON_FORMAT_HINT}`,
           userContent: fullUserContent,
           temperature: 0.85,
           extraHeaders,
@@ -569,7 +582,7 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
     const model = pickModel(settings, state, isMajorEvent);
     const payload = {
       systemInstruction: {
-        parts: [{ text: buildSystemPrompt(state) }],
+        parts: [{ text: staticSys }],
       },
       contents: [
         {

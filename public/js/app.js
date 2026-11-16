@@ -637,15 +637,15 @@ async function handlePlayerAction(text, kind = "text", statTag = "") {
     const roll = rollCheck(val, 14);
     const estDmg = Math.max(15, Math.round((state.player.maxHp || 150) * 0.16 + val * 3));
     const atkHint = /(giết|đánh|chém|tấn công|ám sát|xông|công kích|hạ thủ)/i.test(text)
-      ? ` Sát thương ước tính ở cảnh giới [${state.player.realm}] chỉ ~${estDmg} DMG (nếu đối thủ là Chưởng Môn/Trưởng Lão/cảnh giới cao hơn thì đòn này vô hiệu hoặc bị phản sát nặng).`
+      ? ` (~${estDmg} DMG)`
       : "";
     const failHazard =
       roll.tier === "Đại Thất Bại"
-        ? ` [ĐẠI THẤT BẠI] Không có hào quang nhân vật chính: nếu bối cảnh phù hợp (hang động/bí cảnh/đắc tội kẻ xấu), có thể cho sập bẫy, trúng độc, bị hãm hại hoặc bị thương nặng / hao tu vi.`
+        ? ` [Đại Thất Bại]`
         : roll.tier === "Thất Bại"
-        ? ` [THẤT BẠI HỢP LÝ] Việc không thành, tốn công sức, lộ sơ hở hoặc tổn thất nhẹ-vừa; KHÔNG ép dính bẫy hay hạ độc nếu đang ở sinh hoạt thường ngày.`
+        ? ` [Thất Bại]`
         : "";
-    promptDetail = `Người chơi chọn/hành động (${kind === "choice" ? `gắn chỉ số ${statTag}` : "tự do"}): "${text}".\nKết quả xúc xắc Engine: ${roll.tier} (d20=${roll.d20}, tổng=${roll.total}/${roll.difficulty}).${atkHint}${failHazard}${absurdCheck ? `\n${absurdCheck.promptNote}` : kind === "text" ? `\n[KIỂM TRA NGỮ CẢNH] Nếu text nhảm, vô nghĩa, không liên quan hiện trường hoặc tự bịa cơ duyên (vd bí kíp từ trời rơi xuống): BẮT BUỘC giáng Thiên Phạt (trừ 50-100% HP, KHÔNG thưởng đồ). Nếu tìm chết: viết rõ bối cảnh bị cường giả nhìn thấu, một chưởng đánh chết hoặc vạn kiếm xuyên tâm rồi đặt hpDelta=-999999.` : ""}`;
+    promptDetail = `${kind === "choice" ? `Chọn(${statTag})` : "Tự do"}: "${text}". Roll:${roll.tier}(${roll.d20}/${roll.difficulty}).${atkHint}${failHazard}${absurdCheck ? ` ${absurdCheck.promptNote}` : ""}`;
   }
 
   isBusy = true;
