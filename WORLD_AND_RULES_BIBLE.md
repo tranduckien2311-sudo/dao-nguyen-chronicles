@@ -1165,3 +1165,108 @@ Mỗi công pháp có **Bậc (1–5)** tương ứng 5 Tầng thế giới và 
 - **Trượng Sồi Khắc Rune** [Tầng 1 • Vũ khí]: +2 Tinh Thần, +15% sát thương Ma Pháp.
 - **Giáp Bạc Kỵ Sĩ Thánh Điện** [Tầng 1 • Giáp]: +18 Giáp, +12% Kháng Vật Lý, +8% Kháng Linh Hồn.
 - **Nhẫn Chiêm Tinh Bạc** [Tầng 1 • Phụ kiện]: +4 Giáp, +2 Tri Thức, +2 May Mắn, +10% nhạy bén âm mưu.
+
+---
+
+## 14. DANH SÁCH 100 BẢO VẬT, PHÁP BẢO & THẦN BINH LỢI KHÍ
+
+- **Thanh Sương Kiếm** [Tầng 1 • Hoàng Giai • weapon • Đông Phương] — Kiếm khí hàn băng, +10% sát thương vật lý, làm chậm mục tiêu.
+- **Huyền Thiết Trọng Thuẫn** [Tầng 1 • Hoàng Giai • armor • Đông Phương] — +18 Giáp, giảm 10% sát thương cận chiến.
+- **Tụ Linh Ngọc Bội** [Tầng 1 • Hoàng Giai • accessory • Đông Phương] — +8% tốc độ hấp thụ linh khí và +2 Tâm Trí.
+- **Bích Ngọc Tịch Độc Châu** [Tầng 1 • Huyền Giai • accessory • Đông Phương] — +25% Kháng Độc/Tà, tự phát sáng khi thức ăn có độc.
+- **Hỏa Vân Lô Đỉnh** [Tầng 1 • Huyền Giai • accessory • Đông Phương] — +15% tỉ lệ thành công khi Luyện Đan, kháng Hỏa 10%.
+- **Thất Tinh Trảm Yêu Đao** [Tầng 1 • Huyền Giai • weapon • Đông Phương] — +25% sát thương lên Yêu Thú & Quỷ Vật.
+- **Kim Tơ Nhuyễn Giáp** [Tầng 1 • Huyền Giai • armor • Đông Phương] — +24 Giáp, nhẹ như lụa, tránh đâm lén sau lưng.
+- **Lục Hợp Trận Bàn** [Tầng 1 • Huyền Giai • accessory • Đông Phương] — Bố trí tiểu trận phòng ngự hoặc vây khốn nhanh chóng.
+- **Hắc Thiết Côn (Vô Phong)** [Tầng 1 • Hoàng Giai • weapon • Đông Phương] — Nặng ngàn cân, đánh nát hộ giáp đối thủ.
+- **Thanh Liên Tịnh Tâm Đàn** [Tầng 1 • Huyền Giai • accessory • Đông Phương] — Tiếng đàn trấn áp Tâm Ma, +15% Kháng Linh Hồn.
+- **Truy Hồn Tỏa Liên** [Tầng 1 • Huyền Giai • weapon • Đông Phương] — Xích sắt khóa hồn phách kẻ địch, ngăn tàn hồn bỏ trốn.
+- **Thiên Tằm Bảo Y** [Tầng 1 • Địa Giai • armor • Đông Phương] — +35 Giáp, +15% Kháng Vật Lý & Phép.
+- **Xích Tiêu Phi Kiếm** [Tầng 1 • Địa Giai • weapon • Đông Phương] — Phi kiếm điều khiển từ xa, xuyên giáp cực mạnh.
+- **Cửu Khúc Hoàng Hà Trận Đồ** [Tầng 1 • Địa Giai • accessory • Đông Phương] — Giảm 20% linh lực đối thủ khi rơi vào phạm vi trận.
+- **Tị Trần Châu** [Tầng 1 • Hoàng Giai • accessory • Đông Phương] — Chống bụi bẩn, chướng khí và ẩn giấu hơi thở sơ cấp.
+- **Lôi Kích Mộc Lệnh Bài** [Tầng 1 • Huyền Giai • weapon • Đông Phương] — Dẫn 1 tia thiên lôi cấp thấp, khắc chế Quỷ Tu & Thi Khôi.
+- **Vạn Độc Hồ Lô** [Tầng 1 • Địa Giai • weapon • Đông Phương] — Chứa và luyện hóa trăm loại độc dịch, phun sương độc.
+- **Ngọc Giản Tàn Khuyết** [Tầng 1 • Hoàng Giai • accessory • Đông Phương] — +2 Ngộ Tính khi minh tưởng, ẩn chứa 1 mảnh công pháp cổ.
+- **Thái Ất Phất Trần** [Tầng 1 • Huyền Giai • weapon • Đông Phương] — Đánh tan huyễn thuật và dẫn đường linh khí.
+- **Huyết Sát Phiên** [Tầng 1 • Địa Giai • weapon • Đông Phương] — Hấp thu oán hồn chiến trường để tăng uy lực công kích.
+- **Kiếm Bạc Diệt Quỷ (Silver Claymore)** [Tầng 1 • Uncommon • weapon • Phương Tây] — Chém xuyên lớp da ma thú và gây bỏng bạc lên Ma Cà Rồng.
+- **Áo Choàng Bóng Đêm (Shadow Cloak)** [Tầng 1 • Rare • armor • Phương Tây] — +16 Giáp, +20% tỷ lệ ẩn thân và né bẫy.
+- **Mặt Dây Chuyền Thánh Giá Sắt** [Tầng 1 • Common • accessory • Phương Tây] — +10% Kháng Linh Hồn & Nguyền Rủa.
+- **Nhẫn Khắc Rune Hỏa Cầu** [Tầng 1 • Uncommon • accessory • Phương Tây] — Tích trữ 3 lần thi triển Hỏa Cầu không tốn Mana.
+- **Gậy Gỗ Sồi Cổ Thụ** [Tầng 1 • Rare • weapon • Phương Tây] — +3 Tinh Thần, +20% uy lực Ma Pháp Tự Nhiên.
+- **Khiên Thép Thập Tự** [Tầng 1 • Rare • armor • Phương Tây] — +26 Giáp, phản lại 10% sát thương cận chiến.
+- **Đồng Hồ Cát Bạc (Chrono Sandglass)** [Tầng 1 • Epic • accessory • Phương Tây] — Làm chậm cảm nhận thời gian 1 nhịp để né đòn chí mạng.
+- **Dao Găm Độc Xà (Viper Fang)** [Tầng 1 • Rare • weapon • Phương Tây] — Gây xuất huyết và trúng độc dai dẳng khi đánh lén.
+- **Ống Nhòm Chiêm Tinh Đồng** [Tầng 1 • Uncommon • accessory • Phương Tây] — Nhìn thấu ngụy trang ma thuật cấp thấp và bẫy cơ học.
+- **Kinh Thư Da Cừu (Grimoire Cũ)** [Tầng 1 • Rare • accessory • Phương Tây] — +3 Tri Thức, tăng tốc giải mã cổ ngữ Ma Pháp.
+- **Dao Phẫu Thuật Monomolecular** [Tầng 1 • Uncommon • weapon • Khoa Huyễn] — Lưỡi dao đơn phân tử cắt ngọt hợp kim cấp thấp.
+- **Giáp Nano Phản Xạ Cấp 1** [Tầng 1 • Rare • armor • Khoa Huyễn] — +22 Giáp, giảm 15% sát thương năng lượng/laser.
+- **Chip Trợ Lý Chiến Thuật V1** [Tầng 1 • Rare • accessory • Khoa Huyễn] — +3 Tâm Trí, phân tích quỹ đạo đạn và điểm yếu mục tiêu.
+- **Súng Plasma Cầm Tay MK-II** [Tầng 1 • Uncommon • weapon • Khoa Huyễn] — Bắn tia plasma nhiệt cao, làm chảy giáp vật lý.
+- **Lõi Pin Điểm Không Sơ Cấp** [Tầng 1 • Rare • accessory • Khoa Huyễn] — Hồi phục nhanh năng lượng cho vũ khí và giáp công nghệ.
+- **Tru Tiên Kiếm (Bản Phỏng Chế Tầng 2)** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Kiếm khí đỏ rực chém rách Tiên Khí hộ thể của Chân Tiên.
+- **Cửu Long Thần Hỏa Tráo** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Chụp xuống địch thủ và thiêu đốt bằng Tam Muội Chân Hỏa.
+- **Phiên Thiên Ấn** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Ấn tỷ nặng tựa Thái Sơn, đập nát pháp bảo cấp dưới.
+- **Hỗn Nguyên Kim Đấu** [Tầng 2 • Tiên Giai • accessory • Đông Phương] — Thu giữ pháp bảo đối phương và tước bỏ tu vi tạm thời.
+- **Khổng Tước Linh Vũ Phiến** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Quạt ra Ngũ Sắc Thần Quang quét sạch mọi thần thông ngũ hành.
+- **Tử Kim Hồng Hồ Lô** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Gọi tên đối thủ để hút vào luyện hóa trong 3 khắc.
+- **Bát Quái Tử Kim Lô** [Tầng 2 • Tiên Giai • accessory • Đông Phương] — Luyện Kim Đan Bất Tử và tái tạo nhục thân từ tro tàn.
+- **Thanh Long Yển Nguyệt Thần Đao** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Mỗi nhát chém kéo theo long ngâm chấn động thần hồn.
+- **Lưu Ly Ngọc Tịnh Bình** [Tầng 2 • Tiên Giai • accessory • Đông Phương] — Chứa Tam Quang Thần Thủy hồi phục sinh cơ và giải bách độc.
+- **Kim Cang Trác** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Vòng kim cương ném ra đánh rớt mọi binh khí kim loại.
+- **Thiên Cơ Bàn** [Tầng 2 • Tiên Giai • accessory • Đông Phương] — Suy diễn nhân quả trong phạm vi một đại thế giới.
+- **Đả Thần Tiên** [Tầng 2 • Tiên Giai • weapon • Đông Phương] — Chuyên đánh vào Thần Cách và Nguyên Thần của Tân Thần.
+- **Aegis — Khiên Đầu Gorgon** [Tầng 2 • Legendary • armor • Phương Tây] — Hóa đá kẻ địch nhìn thẳng vào mặt khiên, +60 Giáp Thần Thoại.
+- **Gungnir — Ngọn Giáo Bách Phát Bách Trúng** [Tầng 2 • Legendary • weapon • Phương Tây] — Ném ra không thể né tránh, xuyên thủng mọi kết giới.
+- **Mjolnir — Búa Sấm Thor** [Tầng 2 • Legendary • weapon • Phương Tây] — Triệu hồi cuồng lôi Bắc Âu, nghiền nát Khổng Lồ và Ma Thú.
+- **Excalibur — Thánh Kiếm Ánh Sáng** [Tầng 2 • Legendary • weapon • Phương Tây] — Chém ra Thánh Quang hủy diệt Tà Thần và Ác Ma Vực Thẳm.
+- **Chìa Khóa Lớn Của Solomon** [Tầng 2 • Legendary • accessory • Phương Tây] — Sai khiến 72 Trụ Cột Ma Thần và khóa cổng Không Gian.
+- **Đôi Cánh Hermes (Talaria)** [Tầng 2 • Legendary • armor • Phương Tây] — Tăng tốc độ vượt âm và cho phép du hành giữa các giới tầng 2.
+- **Chén Thánh Vô Tận (Holy Grail)** [Tầng 2 • Legendary • accessory • Phương Tây] — Hồi đầy HP/Mana và thanh tẩy mọi lời nguyền cấp Thần.
+- **Lưỡi Hái Thanatos** [Tầng 2 • Legendary • weapon • Phương Tây] — Cắt đứt sợi chỉ sinh mệnh, gây sát thương trực tiếp lên Linh Hồn.
+- **Chiến Giáp Titan Lượng Tử** [Tầng 2 • Tiên Giai • armor • Khoa Huyễn] — Vận hành bằng Lõi Phản Vật Chất, kháng 45% mọi sát thương.
+- **Pháo Hủy Diệt Hạt Quark** [Tầng 2 • Tiên Giai • weapon • Khoa Huyễn] — Phá hủy liên kết nguyên tử của mục tiêu cấp Hành Tinh.
+- **Mạng Nơ-ron Siêu Trí Tuệ Alpha** [Tầng 2 • Tiên Giai • accessory • Khoa Huyễn] — +15 Ngộ Tính, mô phỏng trước 10.000 kịch bản chiến đấu.
+- **Kiếm Trường Năng Lượng Tachyon** [Tầng 2 • Tiên Giai • weapon • Khoa Huyễn] — Chém vượt tốc độ ánh sáng, đánh trúng trước khi địch kịp phản ứng.
+- **Vệ Tinh Phòng Thủ Dyson Mini** [Tầng 2 • Tiên Giai • armor • Khoa Huyễn] — Tạo màng chắn năng lượng hấp thụ công kích tầm sao.
+- **Bàn Cổ Phủ (Mảnh Hư Ảnh)** [Tầng 3 • Pháp Tắc Giai • weapon • Đông Phương] — Một nhát bổ mang Pháp Tắc Khai Thiên, chẻ đôi không gian 3D.
+- **Đông Hoàng Chung** [Tầng 3 • Pháp Tắc Giai • armor • Đông Phương] — Tiếng chuông định trụ Thời Gian – Không Gian, miễn nhiễm sát thương tầng thấp.
+- **Hà Đồ Lạc Thư** [Tầng 3 • Pháp Tắc Giai • accessory • Đông Phương] — Nắm giữ quy luật biến hóa Tinh Tú và Trận Pháp Hồng Hoang.
+- **Thái Cực Đồ** [Tầng 3 • Pháp Tắc Giai • armor • Đông Phương] — Âm Dương đảo nghịch, hóa giải mọi công kích quy tắc thành hư vô.
+- **Thí Thần Thương** [Tầng 3 • Pháp Tắc Giai • weapon • Đông Phương] — Áp chế hồi phục và gây vết thương Pháp Tắc không thể lành lên Cổ Thần.
+- **Thập Nhị Phẩm Công Đức Kim Liên** [Tầng 3 • Pháp Tắc Giai • armor • Đông Phương] — Miễn nhiễm tâm ma, tà khí và giảm 50% sát thương Nghiệp Lực.
+- **Thập Nhị Phẩm Nghiệp Hỏa Hồng Liên** [Tầng 3 • Pháp Tắc Giai • weapon • Đông Phương] — Thiêu đốt đối thủ dựa trên Nghiệp Lực tích tụ suốt vạn kiếp.
+- **Càn Khôn Đỉnh** [Tầng 3 • Pháp Tắc Giai • accessory • Đông Phương] — Chuyển hóa Hậu Thiên thành Tiên Thiên, tinh luyện vạn vật.
+- **Thiên Thư Phong Thần Bảng** [Tầng 3 • Pháp Tắc Giai • accessory • Đông Phương] — Ghi tên Chân Linh để phong thần hoặc giam cầm vĩnh viễn.
+- **Lục Hồn Phiên** [Tầng 3 • Pháp Tắc Giai • weapon • Đông Phương] — Lắc nhẹ 1 lần liền gặt lấy hồn phách của Cổ Thần.
+- **Lưỡi Hái Thời Gian Cronus (Harpe)** [Tầng 3 • Mythic • weapon • Phương Tây] — Cắt đứt dòng thời gian bất tử của Titan và Ngoại Thần.
+- **Ngọn Lửa Nguyên Thủy Prometheus** [Tầng 3 • Mythic • accessory • Phương Tây] — Ban tri thức Cấm Kỵ và thiêu đốt linh hồn thực thể cao duy.
+- **Mặt Nạ Vô Diện Nyarlathotep** [Tầng 3 • Mythic • accessory • Phương Tây] — Ngụy trang hoàn hảo trước Thần Thức và gieo rắc điên loạn.
+- **Cung Tên Khủng Khiếp Của Orion** [Tầng 3 • Mythic • weapon • Phương Tây] — Mũi tên xuyên qua nhiều chiều không gian cùng lúc.
+- **Áo Choàng Sao Đêm Của Nyx** [Tầng 3 • Mythic • armor • Phương Tây] — Ẩn giấu hoàn toàn sự tồn tại khỏi định mệnh và nhân quả.
+- **Giọt Nước Mắt Của Yggdrasil** [Tầng 3 • Mythic • accessory • Phương Tây] — Tái sinh toàn bộ sinh mệnh từ gốc rễ Cây Thế Giới.
+- **Giọt Nước Mắt Thủy Tinh (Droplet)** [Tầng 3 • Pháp Tắc Giai • weapon • Khoa Huyễn] — Vật chất tương tác mạnh bất khả phá hủy, đâm xuyên hạm đội 3D.
+- **Lá Hai Chiều (Dual-Vector Foil)** [Tầng 3 • Pháp Tắc Giai • weapon • Khoa Huyễn] — Ép sụp toàn bộ hệ sao xuống không gian 2D không thể đảo ngược.
+- **Động Cơ Điểm Kỳ Dị Đen** [Tầng 3 • Pháp Tắc Giai • accessory • Khoa Huyễn] — Khai thác năng lượng hố đen để bẻ cong không-thời gian.
+- **Giáp Chiến Trường 4D (Tesseract Armor)** [Tầng 3 • Pháp Tắc Giai • armor • Khoa Huyễn] — Giấu điểm yếu sinh mệnh sang chiều không gian thứ 4.
+- **Tạo Hóa Ngọc Điệp (Mảnh Vỡ)** [Tầng 4 • Đạo Tận Giai • accessory • Đông Phương] — Ghi khắc 3.000 Đại Đạo, đẩy tốc độ lĩnh ngộ lên cực hạn.
+- **Hỗn Độn Thanh Liên (36 Cánh)** [Tầng 4 • Đạo Tận Giai • armor • Đông Phương] — Phòng ngự tuyệt đối trong Hỗn Độn Hải, trấn áp vạn pháp.
+- **Diệt Thế Đại Ma** [Tầng 4 • Đạo Tận Giai • weapon • Đông Phương] — Nghiền nát mảnh vũ trụ song song thành Hỗn Độn khí nguyên thủy.
+- **Thời Không Chi Luân** [Tầng 4 • Đạo Tận Giai • accessory • Đông Phương] — Quay ngược hoặc khóa cứng dòng thời gian của cả một nhánh vũ trụ.
+- **Nhân Quả Chi Tuyến (Kéo Cắt Định Mệnh)** [Tầng 4 • Đạo Tận Giai • weapon • Đông Phương] — Nhìn thấy và cắt đứt sợi dây nhân quả nối giữa tồn tại với quá khứ.
+- **Hỗn Độn Chung (Bản Thể Duy Nhất)** [Tầng 4 • Đạo Tận Giai • armor • Đông Phương] — Bảo vệ Chân Linh không bị đồng hóa bởi Hỗn Độn.
+- **Bút Ký Của Azathoth (Giấc Mộng Hỗn Mang)** [Tầng 4 • Đạo Tận Giai • weapon • Phương Tây] — Xóa sổ thực tại bằng cách đánh thức cơn ác mộng Hỗn Độn.
+- **Chìa Khóa Cổng Bạc Yog-Sothoth** [Tầng 4 • Đạo Tận Giai • accessory • Phương Tây] — Mở lối thông hành xuyên suốt mọi vũ trụ song song Tầng 1–4.
+- **Cân Công Lý Ma'at Tuyệt Đối** [Tầng 4 • Đạo Tận Giai • accessory • Phương Tây] — Cưỡng ép cân bằng Công Đức & Nghiệp Lực của thực thể Hỗn Độn.
+- **Thanh Kiếm Ngôn Ngữ Sáng Thế** [Tầng 4 • Đạo Tận Giai • weapon • Phương Tây] — Đọc lên một âm tiết liền định nghĩa lại quy luật vật lý quanh mình.
+- **Máy Tính Vũ Trụ Omega** [Tầng 4 • Đạo Tận Giai • accessory • Khoa Huyễn] — Tính toán toàn bộ trạng thái lượng tử của Hỗn Độn Đa Nguyên.
+- **Lõi Hủy Diệt Chân Không Giả** [Tầng 4 • Đạo Tận Giai • weapon • Khoa Huyễn] — Kích hoạt phân rã chân không quét sạch một nhánh thực tại.
+- **Vạn Đạo Quy Nguyên Ấn** [Tầng 5 • Vạn Đạo Quy Nguyên • weapon • Đông Phương] — Hợp nhất 3.000 Đại Đạo thành một ấn quyết tối thượng.
+- **Nguyên Thủy Chân Lý Chi Thư** [Tầng 5 • Vạn Đạo Quy Nguyên • accessory • Đa Vũ Trụ] — Chứa mã nguồn tồn tại; đọc hiểu 1 trang liền siêu thoát luân hồi.
+- **Bàn Cổ Khởi Nguyên Chi Tâm** [Tầng 5 • Vạn Đạo Quy Nguyên • armor • Đông Phương] — Bất hoại tuyệt đối, tự tái tạo mọi khái niệm thân xác & chân linh.
+- **Tam Sinh Thạch (Bản Thể Tối Hậu)** [Tầng 5 • Vạn Đạo Quy Nguyên • accessory • Đa Vũ Trụ] — Ghi chép và sửa đổi quá khứ – hiện tại – vị lai của chính Hệ Thống.
+- **Ngọn Đuốc Khởi Nguyên (First Flame)** [Tầng 5 • Vạn Đạo Quy Nguyên • weapon • Phương Tây] — Thắp sáng hoặc thiêu rụi toàn bộ chu kỳ Kỷ Nguyên.
+- **Vương Miện Tác Giả (Author's Crown)** [Tầng 5 • Vạn Đạo Quy Nguyên • armor • Đa Vũ Trụ] — Miễn nhiễm mọi luật nhân quả, âm mưu và sửa đổi cốt truyện.
+- **Chìa Khóa Mã Nguồn 0/1** [Tầng 5 • Vạn Đạo Quy Nguyên • weapon • Khoa Huyễn] — Can thiệp trực tiếp vào hằng số nền tảng của Đa Vũ Trụ.
+- **Bản Thể Hệ Thống Tối Thượng** [Tầng 5 • Vạn Đạo Quy Nguyên • accessory • Đa Vũ Trụ] — Thâu tóm quyền quản trị toàn bộ Hệ Thống qua các tầng.
