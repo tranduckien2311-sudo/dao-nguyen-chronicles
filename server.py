@@ -58,7 +58,7 @@ class GameHandler(http.server.SimpleHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length).decode("utf-8"))
             api_key = body.get("apiKey") or os.environ.get("GEMINI_API_KEY", "")
-            model = body.get("model", "gemini-3.8-flash")
+            model = body.get("model", "gemini-2.5-flash")
             payload = body.get("payload", {})
 
             if not api_key:

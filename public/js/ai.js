@@ -191,8 +191,8 @@ const RESPONSE_SCHEMA = {
 export function pickModel(settings, state, isMajorEvent = false) {
   if (settings.customModel) return settings.customModel;
   const pref = settings.modelMode || "auto";
-  if (pref === "pro") return "gemini-3.8-pro";
-  return "gemini-3.8-flash";
+  if (pref === "pro") return "gemini-2.5-pro";
+  return "gemini-2.5-flash";
 }
 
 export function buildStaticSystemPrompt(state) {
@@ -490,6 +490,7 @@ async function callOpenAICompatible({ url, apiKey, model, systemPrompt, userCont
         body: JSON.stringify({
           model,
           temperature,
+          max_tokens: 520,
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: systemPrompt },
@@ -497,12 +498,12 @@ async function callOpenAICompatible({ url, apiKey, model, systemPrompt, userCont
           ],
         }),
       },
-      45000
+      20000
     );
     data = await res.json().catch(() => ({}));
   } catch (e) {
     if (e.name === "AbortError") {
-      throw new Error(`${providerName} API quá thời gian chờ (45s). Hãy thử lại.`);
+      throw new Error(`${providerName} API quá thời gian chờ (20s). Hãy thử lại.`);
     }
     throw new Error(`${providerName} lỗi kết nối: ${e.message}`);
   }
@@ -547,9 +548,8 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
     const isGroq = provider === "groq";
     const groqFallbacks = [
       "meta-llama/llama-4-scout-17b-16e-instruct",
-      "llama-3.3-70b-versatile",
-      "qwen/qwen3-32b",
       "llama-3.1-8b-instant",
+      "llama-3.3-70b-versatile",
     ];
     const customM = (settings.customModel || "").trim();
     const candidates = isGroq
@@ -597,7 +597,9 @@ export async function callGeminiGM({ settings, state, userPrompt, isMajorEvent =
         },
       ],
       generationConfig: {
-        temperature: 0.9,
+        temperature: 0.85,
+        maxOutputTokens: 520,
+        ...(model.toLowerCase().includes("pro") ? {} : { thinkingConfig: { thinkingBudget: 0 } }),
         responseMimeType: "application/json",
         responseSchema: RESPONSE_SCHEMA,
       },
