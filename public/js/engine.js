@@ -897,15 +897,15 @@ export function detectContextUnlockedClasses(state, narrativeText = "", choices 
 
   const rules = isWest
     ? [
-        { id: "kysi", re: /kỵ sĩ|huấn luyện kiếm thuẫn|hiệp sĩ|thánh kỵ|giáp sắt/i },
-        { id: "phapsu", re: /hội pháp sư|học viện ma pháp|bái sư pháp sư|nhập môn ma pháp/i },
-        { id: "thuatsi", re: /thuật sĩ|khế ước ác ma|nguyên tố hỗn mang|hắc thuật/i },
-        { id: "thanhsi", re: /giáo hội|thánh điện|mục sư|thánh quang|tế tư/i },
-        { id: "giakim", re: /giả kim|pha chế ma dược|luyện kim|lò giả kim/i },
-        { id: "hocgia", re: /học giả|thư viện cổ|chiêm tinh|giải mã cổ ngữ/i },
-        { id: "tulinh", re: /tử linh|chiêu hồn|nghĩa địa|hắc ám pháp sư/i },
-        { id: "thichkhach", re: /thích khách|sát thủ|ám sát|hội bóng tối/i },
-        { id: "cungthu", re: /xạ thủ|cung thủ|thợ săn|kiểm lâm/i },
+        { id: "w_warrior", re: /kỵ sĩ|huấn luyện kiếm thuẫn|hiệp sĩ|thánh kỵ|giáp sắt|chiến binh/i },
+        { id: "w_mage", re: /hội pháp sư|học viện ma pháp|bái sư pháp sư|nhập môn ma pháp|pháp sư nguyên tố/i },
+        { id: "w_warlock", re: /thuật sĩ|khế ước ác ma|tử linh|chiêu hồn|nghĩa địa|hắc thuật/i },
+        { id: "w_priest", re: /giáo hội|thánh điện|mục sư|thánh quang|tế tư|paladin/i },
+        { id: "w_alchemist", re: /giả kim|pha chế ma dược|luyện kim|lò giả kim|khắc rune/i },
+        { id: "w_scholar", re: /học giả|thư viện cổ|chiêm tinh|giải mã cổ ngữ/i },
+        { id: "w_druid", re: /tu sĩ tự nhiên|druid|hóa thú|tinh linh rừng/i },
+        { id: "w_rogue", re: /thích khách|sát thủ|ám sát|hội bóng tối|đạo tặc/i },
+        { id: "w_ranger", re: /du hiệp|cung thủ|xạ thủ|thợ săn|kiểm lâm/i },
       ]
     : [
         { id: "thetu", re: /luyện thể|thể tu|rèn gân cốt|võ quán|nội kình|quyền pháp/i },
